@@ -1,0 +1,13 @@
+
+# class Document(Model):
+#     id = Column(db.Integer, primary_key=True)
+#     text = Column(db.Text)
+#     next_text = Column(db.Integer, db.ForeignKey('document.id'), default=None)
+#     meta_data = Column(JSON, default = {})
+
+# class Collection(Model):
+#     id = Column(db.Integer, primary_key=True)
+#     documents = relationship('Document', secondary='collection_documents', lazy='dynamic')
+#     parent = relationship(db.Integer, db.ForeignKey('collection.id'))
+
+# Define the Role data-model
