@@ -17,13 +17,27 @@ class Document(db.Model):
     data = deferred(db.Column(JSON, default = {}))
     collection_id = db.Column(db.Integer, db.ForeignKey('collection.id'), nullable=False)
 
+
 class Collection(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(25))
     documents = db.relationship('Document', backref='collection', lazy='dynamic')
+    document_aliases = db.relationship('Document', )
+
+    def get_doc_by_alias(alias_id):
+        doc = Document.query.get(self.documents.query.get(alias_id).real_doc_id)
     ## make a one to many  parents
     # and a one to many children
     # parents 
+
+
+
+
+class DocumentAlias(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    real_doc_id = db.Column(db.Integer, db.ForeignKey('document.id'))
+
+
 
 # class Tag(db.Model):
 #     id = db.column(db.Integer, primary_key=True)

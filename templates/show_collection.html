@@ -1,5 +1,42 @@
+<!-- 
+{% for h in headings %}
+{{h}}
+{% endfor %}
+{% for doc in docs %}
+{% endfor %} -->
+<!-- {% for table in tables %}
 
-{% for table in tables %}
             {{titles[loop.index]}}
             {{ table|safe }}
-{% endfor %}
+{% endfor %} -->
+
+
+<!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.20/datatables.min.css"/> -->
+
+
+<table id="{{ table_name }}" class="display">
+    <thead>
+        <tr>
+            {% for k in table[0] %}
+            <th>{{ k }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for datum in table %}
+        <tr id={{ datum[2] }}>
+            {% for k in headings %}
+            <td>{{ k, datum[k] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jq-3.3.1/dt-1.10.20/datatables.min.js"></script>
+<script>
+// $(document).ready( function () {
+//     $('#{{table_name}}').DataTable(
+//         {'retrieve': true} );
+// } );
+</script>

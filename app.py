@@ -24,6 +24,20 @@ def home():
 def add_collection():
     return jsonify({})
 
+@app.route('/filter_collection/<int:collection>/', methods=["POST", "GET"])
+def filter_collection(collection):
+    args = request.args.to_dict()
+    c = models.Collection.query.get(collection)
+    if 'filter' in args:
+        print(args['filter'])
+    # docs = [d.data for d in c.documents[start:start+25]]
+    # docs_we_want = [n for n in range(start, start+26)]
+    # docs = [c.documents.filter_by(id=id).one() for id in docs_we_want]
+    # docs = [d.data for d in docs]
+    # df = pd.DataFrame(docs) 
+    # return render_template('show_collection.html',  tables=[df.to_html(classes='data')], titles=df.columns.values)
+    return jsonify('')
+
 @app.route('/view_collection/<int:collection>/<int:start>', methods=["POST", "GET"])
 def view_collection(collection, start):
     c = models.Collection.query.get(collection)
@@ -31,8 +45,10 @@ def view_collection(collection, start):
     docs_we_want = [n for n in range(start, start+26)]
     docs = [c.documents.filter_by(id=id).one() for id in docs_we_want]
     docs = [d.data for d in docs]
-    df = pd.DataFrame(docs) 
-    return render_template('show_collection.html',  tables=[df.to_html(classes='data')], titles=df.columns.values)
+    headings = list(set([key for doc in docs for key in doc.keys()]))
+    # df = pd.DataFrame(docs) 
+    return render_template('show_collection.html', table = docs, table_name = 'documents', headings=headings)
+    # return render_template('show_collection.html',  tables=[df.to_html(classes='data')], titles=df.columns.values)
 
 @app.route('/add_user')
 def add_user():
