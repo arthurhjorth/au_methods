@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>My Projects</h1>
+{% for p in projects %}
+<a href={{ url_for('project', project_id=p.id) }} >{{p.name}}</a>
+{% endfor %}
+{% endblock content %}

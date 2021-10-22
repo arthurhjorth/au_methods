@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="content-section">
+{{ document.data}}
+</div>
+
+<div class="container">
+<div class="row justify-content-md-center">
+<div class ="col col-md-auto">
+<h2>Comments</h2>
+{% for comment in document.doc_comments %}
+<div class="content-section">
+    {{ comment.text }}
+</div>
+{% endfor %}
+</div>
+
+<div class="col col-md-auto">
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4">Add Comment</legend>
+                <div class="form-group">
+                    {{ comment_form.text.label(class="form-control-label") }}
+                    {% if comment_form.text.errors %}
+                        {{ comment_form.text(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in comment_form.text.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ comment_form.text(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            </fieldset>
+            <div class="form-group">
+                {{ comment_form.submit_comment(class="btn btn-outline-info") }}
+            </div>
+
+
+        </fieldset>
+        </form>
+</div>
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4">Add Comment</legend>
+                <div class="form-group">
+                    {{ create_tag_form.tag_name.label(class="form-control-label") }}
+                    {% if create_tag_form.tag_name.errors %}
+                        {{ create_tag_form.tag_name(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in create_tag_form.tag_name.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ create_tag_form.tag_name(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            </fieldset>
+            <div class="form-group">
+                {{ create_tag_form.submit_tag_name(class="btn btn-outline-info") }}
+            </div>
+
+
+        </fieldset>
+        </form>
+</div>
+
+
+{% endblock content %}
