@@ -12,4 +12,12 @@
 </div>
 </div>
 {% endfor %}
+<p>View by tag:</p>
+<ul>
+{% for tag in project.tags %}
+<li>
+<a href={{ url_for('view_tag', tag_id=tag.id, page_start=1) }} >{{tag.text}} </a>  ({{ tag.tag_docs.count() }} documents)
+</li>
+{% endfor %}
+</ul>
 {% endblock content %}

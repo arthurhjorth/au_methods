@@ -4,13 +4,13 @@ from models import Document, Collection
 from app import db
 
 
-def add(filename, collection_name):
+def add(filename, collection_name, first_n=999999999999999999999):
     with open(filename) as inf:
         new_coll = Collection(name=collection_name)
         db.session.add(new_coll)
         db.session.commit()
         counter = 0
-        for line in inf.readlines()[:500000]:
+        for line in inf.readlines()[:first_n]:
             counter = counter + 1
             d = json.loads(line)
             new_doc = Document(data=d, collection_id=new_coll.id)

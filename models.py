@@ -45,8 +45,6 @@ class Collection(db.Model):
     filters = db.Column(JSON, default={})
     headings = db.Column(JSON, default=[])
     collection_tags = db.Column(JSON, default=[])
-    # parent_ids = db.relationship('Collection', secondary=collection_families, lazy='subquery', foreign_keys='collection.id')
-    # children_ids = db.relationship('Collection', secondary=collection_families, lazy='subquery', foreign_keys='collection.id')
     time_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 class Document(db.Model):
@@ -55,14 +53,13 @@ class Document(db.Model):
     data = deferred(db.Column(JSON, default = {}))
     collection_id = db.Column(db.Integer, db.ForeignKey('collection.id'), nullable=False)
     doc_tags = db.relationship('Tag', secondary=document_tags, lazy='subquery',
-        backref=db.backref('tag_docs', lazy=True))
+        backref=db.backref('tag_docs', lazy='dynamic'))
     doc_comments = db.relationship('Comment')
 
 class Tag(db.Model):
     __tablename__ = 'tag'
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(25), unique=True)
-    # tag_docs = db.relationship('Document', backref='doc_tags', lazy=True) # this is implicit
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
     time_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
