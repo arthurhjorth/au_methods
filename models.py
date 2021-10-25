@@ -12,7 +12,9 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 #     app.db.Column('parent_ids', app.db.Integer, app.db.ForeignKey('collection.id'), primary_key=True),
 #     app.db.Column('children_ids', app.db.Integer, app.db.ForeignKey('collection.id'), primary_key=True)
 # )
-
+@app.login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id)) 
 
 collection_documents = app.db.Table('collection_document',
     app.db.Column('document_id', app.db.Integer, app.db.ForeignKey('document.id'), primary_key=True),

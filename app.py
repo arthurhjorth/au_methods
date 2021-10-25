@@ -27,9 +27,9 @@ import pandas as pd
 
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return models.User.query.get(user_id)
+# @login_manager.user_loader
+# def load_user(user_id):
+#     return models.User.query.get(user_id)
 
 @app.route('/')
 @app.route('/home')
