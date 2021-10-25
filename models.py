@@ -58,7 +58,7 @@ class Document(app.db.Model):
     __tablename__ = 'document'
     id = app.db.Column(app.db.Integer, primary_key=True)
     data = deferred(app.db.Column(JSON, default = {}))
-    # collection_id = app.db.Column(app.db.Integer, app.db.ForeignKey('collection.id'), nullable=False)
+    collection_id = app.db.Column(app.db.Integer, app.db.ForeignKey('collection.id'), nullable=False)
     doc_tags = app.db.relationship('Tag', secondary=document_tags, lazy='subquery',
         backref=app.db.backref('tag_docs', lazy='dynamic'))
     doc_comments = app.db.relationship('Comment')
