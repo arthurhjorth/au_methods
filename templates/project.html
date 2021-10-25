@@ -4,20 +4,24 @@
 
 <div class="content-section col-md-12">
     <h1>Collections in Project</h1>
-{% for c in collections_data %}
+    {% for c in collections_data %}
 <div class="content-section col-md-12">
-<p>Name of Collection<a href={{ url_for('view_collection', collection=c.collection_id, page_start=1) }} >{{c.collection_name}}</a> (click to view)</p>
-<p>Entries: {{ c.entries }}</p>
-<p>Filters: {{ c.filters }} </p>
+<p><b>Name of Collection: </b><a href={{ url_for('view_collection', collection=c.collection_id, page_start=1) }} >{{c.collection_name}}</a> (click to view)</p>
+<p><b>Entries:</b> {{ c.entries }}</p>
+<p><b>Filters:</b> {{ c.filters }} </p>
+<a href={{ url_for('try_filters', collection=c.collection_id) }} >Add filters</a>
+
+
+
 </div>
+    {% endfor %}
 </div>
-{% endfor %}
-<p>View by tag:</p>
-<ul>
+<div class="content-section col-md-12">
+<p><b>View by tag:</b></p>
 {% for tag in project.tags %}
-<li>
+<div class="content-section col-md-12">
 <a href={{ url_for('view_tag', tag_id=tag.id, page_start=1) }} >{{tag.text}} </a>  ({{ tag.tag_docs.count() }} documents)
-</li>
+</div>
+</div>
 {% endfor %}
-</ul>
 {% endblock content %}

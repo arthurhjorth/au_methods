@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Filtering collection {{ view_data['collection_name']}} </h1>
+<div class="content-section">
+<p>Original filters: {{ view_data['original_filters'] }} </p>
+<p>Docs originally in collection: {{ view_data['collection_count']}}</p>
+<p><b>Addtional filters:</b></p>
+<p>Included words: {{ view_data['included']}}</p>
+<p>Excluded words: {{ view_data['excluded']}}</p>
+<p>Total documents left: {{ view_data['total']}}</p>
+</div>
+    <form method="POST" action="">
+        <fieldset class="form-group">
+                <div class="form-group">
+                    {{ create_filtered_collection_form.collection_name.label(class="form-control-label") }}
+                    {% if create_filtered_collection_form.collection_name.errors %}
+                        {{ create_filtered_collection_form.collection_name(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in create_filtered_collection_form.collection_name.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ create_filtered_collection_form.collection_name(class="form-control form-control-lg") }}
+                    {% endif %}
+            </div>
+            <div class="form-group">
+                {{ create_filtered_collection_form.create_new_collection(class="btn btn-outline-info") }}
+            </div>
+            </fieldset>
+            </form>
+<div class="content-section">
+    <div class="table-responsive" style="height:500px;">
+<table  class="table table-dark table-striped w-auto">
+        <thead class="thead-dark">
+            <!-- <tr><a href="View Doc</tr> -->
+            <tr>
+            <th scope="col">View Doc</th>
+                {% for k in headings %}
+                <th scope="col">{{ k }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+    <tbody>
+        {% for datum in table %}
+        <tr id={{ datum[2] }}>
+            <td><a href='{{ url_for('view_document2', project_id=project_id, doc_id=datum.id) }}'>View</a></td>
+            {% for k in headings %}
+            <td>{{ datum[k] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</div>
+</div>
+
+
+<a href='{{ url_for('filter_collection', collection=view_data.collection_id,contains=view_data.contains, excludes=view_data.excludes, page_start=view_data.current_page - 1) }}'><< Previous page       </a>
+<a href='{{ url_for('filter_collection', collection=view_data.collection_id,contains=view_data.contains, excludes=view_data.excludes, page_start=view_data.current_page + 1) }}'>. Next Page >> </a>
+
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jq-3.3.1/dt-1.10.20/datatables.min.js"></script>
+<script>
+</script>
+{% endblock content %}

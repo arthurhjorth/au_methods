@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
+
+
+<td><a href='{{ url_for('project', project_id=project_id) }}'><< Back to Project Overview</a></td>
+
 <div class="content-section">
 {{ document.data}}
 </div>
@@ -7,10 +11,11 @@
 <div class="container">
     <div class="row justify-content-md-center">
         <div class ="col col-md-auto">
-            <h2>Comments</h2>
-            {% for comment in document.doc_comments %}
+            <legend class="border-bottom mb-4">Comments</legend>
+            {% for comment in doc_data['comments'] %}
             <div class="content-section">
-                {{ comment.text }}
+                <p><b>{{ comment[0] }} </b></p>
+                {{ comment[1] }}
             </div>
         {% endfor %}
         </div>
@@ -43,11 +48,11 @@
 </div>
 
 <div class="col col-md-auto">
-    <h2>Document Tags</h2>
+    <legend class="border-bottom mb-4">Currently tagged as:</legend>
     {% for tag in doc_data['doc_tags'] %}
     <form action="" method="post"><button type="submit" value="{{tag}}" name="delete_tag">{{tag}}</button></form>
     {% endfor %}
-    <h2>Project Tags</h2>
+    <legend class="border-bottom mb-4">Available tags: </legend>
     {% for tag in doc_data['project_tags'] %}
     <form action="" method="post"><button type="submit" value="{{tag}}" name="add_tag">{{tag}}</button></form>
     {% endfor %}

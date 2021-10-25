@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
 {% block content %}
+
+<td><a href='{{ url_for('project', project_id=project_id) }}'><< Back to Project Overview</a></td>
+
 <div class="content-section">
     <div class="table-responsive" style="height:500px;">
 <table  class="table table-dark table-striped w-auto">
@@ -26,11 +29,7 @@
 
 </div>
 </div>
+<a href='{{ url_for('view_collection', collection=collection, page_start=current_page - 1) }}'><< Previous page       </a>
+<a href='{{ url_for('view_collection', collection=collection, page_start=current_page + 1) }}'>.               Next page >> </a> 
 <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jq-3.3.1/dt-1.10.20/datatables.min.js"></script>
-<script>
-// $(document).ready( function () {
-//     $('#{{table_name}}').DataTable(
-//         {'retrieve': true} );
-// } );
-</script>
 {% endblock content %}
