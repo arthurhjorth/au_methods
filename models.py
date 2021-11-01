@@ -51,7 +51,7 @@ class Collection(app.db.Model):
     documents = app.db.relationship('Document', secondary=collection_documents, lazy='dynamic',
         backref=app.db.backref('collections', lazy='dynamic'))
     project_id = app.db.Column(app.db.Integer, app.db.ForeignKey('project.id'))
-    filters = app.db.Column(JSON, default={})
+    filters = app.db.Column(JSON, default=[])
     headings = app.db.Column(JSON, default=[])
     collection_tags = app.db.Column(JSON, default=[])
     time_created = app.db.Column(app.db.DateTime, nullable=False, default=datetime.utcnow)
@@ -120,7 +120,7 @@ class User(app.db.Model, UserMixin):
         return User.query.get(user_id)
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}', '{self.image_file}')"
+        return f"User('{self.name}', '{self.email}', '{self.image_file}')"
 
 class Role(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)

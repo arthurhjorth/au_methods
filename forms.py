@@ -16,6 +16,7 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email',
                         validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
+    student_group = SelectField('Which group are you in?', validators=[DataRequired()])
     confirm_password = PasswordField('Confirm Password',
                                      validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign Up')
@@ -26,6 +27,13 @@ class AddProjectForm(FlaskForm):
     group = SelectField('Which student group should participate?', validators=[DataRequired()])
     dataset = SelectField('Which dataset will the project work on?', validators=[DataRequired()])
     submit = SubmitField("Create Project")
+
+class FilterForm2(FlaskForm):
+    field_name = SelectField('Which field do you want to filter on?', validators=[DataRequired()])
+    operator = SelectField('What kind of filter?', validators=[DataRequired()])
+    filter_data = StringField('How do you want to filter?')
+    add_filter = SubmitField("Add this filter")
+    apply_filter = SubmitField("Try all these filters")
 
 class FilterForm(FlaskForm):
     included_words = StringField('Words that documents must contain (separate by comma):')

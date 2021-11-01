@@ -3,7 +3,7 @@ import os
 import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from forms import AddGroupForm, AddCommentForm, AddTagForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm
+from forms import AddGroupForm, AddCommentForm, AddTagForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
 from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
@@ -36,6 +36,7 @@ import pandas as pd
 @login_required
 @login_required
 def home():
+    print(current_user.group_id)
     projects = user_projects()
     print(projects)
     return render_template('index.html', projects = projects)
@@ -135,6 +136,46 @@ def view_document2(project_id, doc_id):
         return redirect(url_for('view_document2', project_id=project.id, doc_id=doc_id ))
     doc_data['comments'] = [(models.User.query.get(c.user_id).name, c.text) for c in the_doc.doc_comments]
     return render_template('view_document.html', project_id = project_id, document=the_doc, comment_form = add_comment_form, add_tag_form=add_tag_form, create_tag_form=create_tag_form, doc_data=doc_data)
+
+
+@app.route('/try_filters2/<int:collection>', methods=["POST", "GET"])
+@login_required
+def try_filters2(collection):
+    c = models.Collection.query.get(collection)
+    existing_filters = c.filters
+    filters_list = []
+    filters_string = ""
+    arg_filters = request.args.to_dict().get('filters', "")
+    print(arg_filters)
+    print(len(arg_filters))
+    if len(arg_filters) > 0:
+        print("arg filters received ", arg_filters)
+        filter_tokens = arg_filters.split(",")
+        filters_list = [filter_tokens[n:n+3] for n in range(0, len(filter_tokens), 3)]
+        # filters_string = ",".join(w for sl in filters_list for w in sl )
+    print("input filters", filters_string)
+
+    filter_form = FilterForm2()
+    filter_form.field_name.choices = [( str(fieldname), str(fieldname) ) for fieldname in c.headings]
+    operations = ['contains', 'does not contain', 'greater than', 'less than', 'equals', 'document has this field', 'document does not have this field']
+    filter_form.operator.choices = [( str(op), str(op) ) for op in operations]
+    if request.method == 'POST':
+        post_dict = request.form.to_dict()
+        if 'add_filter' in post_dict:
+            new_filter = [post_dict['field_name'], post_dict['operator'], post_dict['filter_data']]
+            new_filters = ",".join(w for w in new_filter)
+            filters_string = filters_string+new_filters
+            # arg_filters.append(new_filter)
+            return redirect(url_for('try_filters2', collection = c.id, filters=filters_string))
+        return redirect(url_for('filter_collection', collection = collection, contains=inc, excludes=exc, page_start=1))
+    if 'contains' in existing_filters:
+        inc_string = ",".join(w for w in existing_filters['contains'])
+        inc_string = "" if inc_string == 0 else inc_string
+        exc_string = ",".join(w for w in existing_filters['excludes'])
+        exc_string = "" if exc_string == str(0) else exc_string
+        filter_form.included_words.data = inc_string
+        filter_form.excluded_words.data = exc_string
+    return render_template('try_filters2.html', filter_form=filter_form, collection=c)
 
 
 @app.route('/try_filters/<int:collection>', methods=["POST", "GET"])
@@ -270,9 +311,10 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = RegistrationForm()
+    form.student_group.choices = [( str(g.id), g.name ) for g in models.Group.query.all()]
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
-        user = models.User(name=form.username.data, email=form.email.data, password=hashed_password)
+        user = models.User(name=form.username.data, email=form.email.data, password=hashed_password, group_id = form.student_group.data)
         db.session.add(user)
         db.session.commit()
         flash('Your account has been created! You are now able to log in', 'success')
