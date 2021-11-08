@@ -33,6 +33,7 @@ class FilterForm2(FlaskForm):
     operator = SelectField('What kind of filter?', validators=[DataRequired()])
     filter_data = StringField('How do you want to filter?')
     add_filter = SubmitField("Add this filter")
+    name_of_new_collection = StringField("What is the name of your new collection?")
     apply_filter = SubmitField("Try all these filters")
 
 class FilterForm(FlaskForm):

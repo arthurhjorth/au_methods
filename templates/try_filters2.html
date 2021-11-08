@@ -1,0 +1,91 @@
+
+{% extends "layout.html" %}
+
+
+
+{% block content %}
+
+<td><a href='{{ url_for('project', project_id=collection.project_id) }}'><< Back to Project Overview</a></td>
+{% if collection.parent_filters != {} %}
+    <h2>Existing Filters</h2>
+    {% for k,v in collection.parent_filters.items() %}
+        {% for d in v %}
+            <p>{{k}}  : {{d[1]}} {{d[2]}}</p>
+        {% endfor %}
+    {% endfor %}
+{% endif %}
+
+<h2>New Filters</h2>
+    {% for k,v in collection.filters.items() %}
+        <p><b>{{k}} </b>  : |
+        {% for d in v %}
+            {{d[0]}} {{d[1]}} |
+        {% endfor %}
+        </p>
+    {% endfor %}
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4">Add, or remove filters.</legend>
+                <div class="form-group">
+                    {{ filter_form.field_name.label(class="form-control-label") }}
+                    {% if filter_form.field_name.errors %}
+                        {{ filter_form.field_name(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in filter_form.field_name.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ filter_form.field_name(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ filter_form.operator.label(class="form-control-label") }}
+                    {% if filter_form.operator.errors %}
+                        {{ filter_form.operator(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in filter_form.operator.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ filter_form.operator(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ filter_form.filter_data.label(class="form-control-label") }}
+                    {% if filter_form.filter_data.errors %}
+                        {{ filter_form.filter_data(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in filter_form.filter_data.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ filter_form.filter_data(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            <div class="form-group">
+                {{ filter_form.add_filter(class="btn btn-outline-info") }}
+                </div>
+                <div class="form-group">
+                    {{ filter_form.name_of_new_collection.label(class="form-control-label") }}
+                    {% if filter_form.name_of_new_collection.errors %}
+                        {{ filter_form.name_of_new_collection(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in filter_form.name_of_new_collection.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ filter_form.name_of_new_collection(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            <div class="form-group">
+                {{ filter_form.apply_filter(class="btn btn-outline-info") }}
+                </div>
+        </fieldset>
+        </form>
+
+
+{% endblock content %}

@@ -27,13 +27,13 @@ app.db.session.add(u)
 app.db.session.commit()
 
 add('input_data/Electronics_5.json', 'Electronics Reviews, 1.5M', 1500000)
-add('input_data/Electronics_5.json', 'Electronics Reviews, tiny', 200000)
+add('input_data/Electronics_5.json', 'Electronics Reviews, tiny', 20000)
 
 g = models.Group(name='admin group', users=[u])
 app.db.session.add(g)
 app.db.session.commit()
 for n in range(13):
-    student_group = models.group(name='Group ' + str(n), users = [])
+    student_group = models.Group(name='Group ' + str(n), users = [])
     app.db.session.add(student_group)
     app.db.session.commit()
 c = models.Collection.query.get(1)

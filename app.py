@@ -7,6 +7,8 @@ from forms import AddGroupForm, AddCommentForm, AddTagForm, CreateFilteredCollec
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
 from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
+from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy import text
 secrets = json.loads(open('secrets.json').read())
 
 
@@ -15,6 +17,7 @@ app.config['SECRET_KEY'] = os.urandom(32)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://au_methods_postgres:Hermes_2014@localhost:5432/au_methods_postgres" ## THIS WORKS FOR POSTGRES
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/media/a/data/sqlite/site.db'
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test_db.db'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -36,9 +39,7 @@ import pandas as pd
 @login_required
 @login_required
 def home():
-    print(current_user.group_id)
     projects = user_projects()
-    print(projects)
     return render_template('index.html', projects = projects)
 
 
@@ -101,8 +102,8 @@ def view_document2(project_id, doc_id):
     if request.method == 'POST' and 'delete_tag' in request.form.to_dict():
         tag_text = request.form.to_dict()['delete_tag']
         the_tag = models.Tag.query.filter_by(text=tag_text, project_id=project.id).first()
-        print(the_tag)
-        print(the_doc.doc_tags )
+        # print(the_tag)
+        # print(the_doc.doc_tags )
         tags = the_doc.doc_tags
         tags.remove(the_tag)
         the_doc.doc_tags = tags
@@ -117,11 +118,11 @@ def view_document2(project_id, doc_id):
         db.session.commit()
         return redirect(url_for('view_document2', project_id=project.id, doc_id=doc_id ))
     if request.method == 'POST' and 'submit_tag_name' in request.form.to_dict():
-        print("new tag")
+        # print("new tag")
         the_tag_text = create_tag_form.tag_name.data.strip().lower()
         the_tag_text = the_tag_text.replace(" ", "_")
         new_tag = models.Tag(text=the_tag_text, project_id=project_id)
-        print(tag_names)
+        # print(tag_names)
         if the_tag_text not in tag_names:
             db.session.add(new_tag)
             db.session.commit()
@@ -142,46 +143,131 @@ def view_document2(project_id, doc_id):
 @login_required
 def try_filters2(collection):
     c = models.Collection.query.get(collection)
+    if c.documents.count() != 0:
+        new_collection = models.Collection(parent_filters=c.filters, parent_id = c.id, project_id = c.project_id, headings=c.headings)
+        db.session.add(new_collection)
+        db.session.commit()
+        return redirect(url_for('try_filters2', collection=new_collection.id))
     existing_filters = c.filters
     filters_list = []
     filters_string = ""
     arg_filters = request.args.to_dict().get('filters', "")
-    print(arg_filters)
-    print(len(arg_filters))
     if len(arg_filters) > 0:
-        print("arg filters received ", arg_filters)
         filter_tokens = arg_filters.split(",")
         filters_list = [filter_tokens[n:n+3] for n in range(0, len(filter_tokens), 3)]
         # filters_string = ",".join(w for sl in filters_list for w in sl )
-    print("input filters", filters_string)
 
     filter_form = FilterForm2()
     filter_form.field_name.choices = [( str(fieldname), str(fieldname) ) for fieldname in c.headings]
-    operations = ['contains', 'does not contain', 'greater than', 'less than', 'equals', 'document has this field', 'document does not have this field']
+    operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals']#, 'document has this field', 'document does not have this field']
+    # operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals', 'document has this field', 'document does not have this field']
     filter_form.operator.choices = [( str(op), str(op) ) for op in operations]
+    # print(request.form.to_dict())
     if request.method == 'POST':
         post_dict = request.form.to_dict()
+        # print(post_dict)
         if 'add_filter' in post_dict:
             new_filter = [post_dict['field_name'], post_dict['operator'], post_dict['filter_data']]
             new_filters = ",".join(w for w in new_filter)
             filters_string = filters_string+new_filters
+            filters_dict = c.filters
+            field_filter = filters_dict.get(post_dict['field_name'], [])
+            field_filter.append([post_dict['operator'], post_dict['filter_data']])
+            filters_dict[post_dict['field_name']] = field_filter
+            flag_modified(c, "filters") 
+            db.session.add(c)
+            db.session.merge(c)
+            db.session.flush()
+            db.session.commit()
             # arg_filters.append(new_filter)
             return redirect(url_for('try_filters2', collection = c.id, filters=filters_string))
-        return redirect(url_for('filter_collection', collection = collection, contains=inc, excludes=exc, page_start=1))
-    if 'contains' in existing_filters:
-        inc_string = ",".join(w for w in existing_filters['contains'])
-        inc_string = "" if inc_string == 0 else inc_string
-        exc_string = ",".join(w for w in existing_filters['excludes'])
-        exc_string = "" if exc_string == str(0) else exc_string
-        filter_form.included_words.data = inc_string
-        filter_form.excluded_words.data = exc_string
+        if 'apply_filter' in post_dict:
+            parent_collection = models.Collection.query.get(c.parent_id)
+            query = parent_collection.documents
+            for field_name, filterdata in c.filters.items():
+                for f in filterdata:
+                    operator = f[0]
+                    operand = f[1]
+                    if operator == 'contains text':
+                        query = query.filter(models.Document.data[field_name].contains(operand))
+                    if operator == 'does not contain text':
+                        query = query.filter(not_(models.Document.data[field_name].contains(operand)))
+            ## because casting to int doesnt work, ,we do these by creating a list and just filtring through each of them.
+            new_collection_docs = []
+            for d in query.all():
+                doc_data = d.data
+                include_doc = True
+                for field_name, filterdata in c.filters.items():
+                    if field_name not in doc_data:
+                        include_doc = False
+                    if include_doc:
+                        for f in filterdata:
+                            operator = f[0]
+                            ## we only want key value pairs that relate to mathematical operations here. 
+                            if operator in ['greater than', 'less than', 'equals']:
+                                operand = float(f[1])
+                                field_value = doc_data[field_name]
+                                try:
+                                    field_value = float(field_value)
+                                    if operator == 'greater than' and field_value < operand:
+                                        include_doc = False
+                                    if operator == 'less than' and field_value > operand:
+                                        include_doc = False
+                                    if operator == 'equals' and field_value != operand:
+                                        include_doc = False
+                                except:
+                                    include_doc = False
+                if include_doc:
+                    # print(operand, field_value, d.id, len(new_collection_docs))
+                    new_collection_docs.append(d)
+            c.documents = new_collection_docs
+            c.filters.update(parent_collection.filters)
+            # get name from form
+            c.name = post_dict['name_of_new_collection']
+            flag_modified(c, "filters") 
+            db.session.add(c)
+            db.session.merge(c)
+            db.session.flush()
+            db.session.commit()
+            return redirect(url_for('view_collection', collection=c.id, page_start = 1))
+
+
+    # {'image': [['document has this field', '']], 'reviewText': [['contains', 'iphone'], ['contains', 'screen'], ['contains text', 'samsung']], 
+    # 'overall': [['equals', '5']], 'asin': [['document has this field', ''], ['contains text', ''], ['contains text', ''], ['contains text', '']], 'summary': [['contains text', 'great']]}
+
+    # c = models.Collection.query.get(collection)
+    # contained_words = []
+    # excluded_words = []
+    # if contains == "0":
+    #     contained_words = []
+    # else:
+    #     contained_words = contains.split(",")
+    # if excludes == "0":
+    #     excluded_words = []
+    # else:
+    #     excluded_words = excludes.split(",")
+    # query = c.documents
+    # if len(contained_words) > 0:
+    #     for w in contained_words:
+    #         print("including", w)
+    #         query = query.filter(models.Document.data['reviewText'].contains(w))
+    # if len(excluded_words) > 0:
+    #     for w in excluded_words:
+    #         print("excluding", w)
+    #         query = query.filter(not_(models.Document.data['reviewText'].contains(w)))
+    # docs = [d.data for d in query.paginate(page_start, 25).items]
+
+
+
+
+
     return render_template('try_filters2.html', filter_form=filter_form, collection=c)
 
 
 @app.route('/try_filters/<int:collection>', methods=["POST", "GET"])
 @login_required
 def try_filters(collection):
-    print(request.args.to_dict())
+    # print(request.args.to_dict())
     c = models.Collection.query.get(collection)
     existing_filters = c.filters
     filter_form = FilterForm()
@@ -194,7 +280,7 @@ def try_filters(collection):
         exc = "".join(w for w in exc)
         inc = 0 if len(inc) < 1 else inc
         exc = 0 if len(exc) < 1 else exc
-        print(inc, exc)
+        # print(inc, exc)
         return redirect(url_for('filter_collection', collection = collection, contains=inc, excludes=exc, page_start=1))
     if 'contains' in existing_filters:
         inc_string = ",".join(w for w in existing_filters['contains'])
@@ -222,11 +308,11 @@ def filter_collection(collection, contains, excludes, page_start):
     query = c.documents
     if len(contained_words) > 0:
         for w in contained_words:
-            print("including", w)
+            # print("including", w)
             query = query.filter(models.Document.data['reviewText'].contains(w))
     if len(excluded_words) > 0:
         for w in excluded_words:
-            print("excluding", w)
+            # print("excluding", w)
             query = query.filter(not_(models.Document.data['reviewText'].contains(w)))
     docs = [d.data for d in query.paginate(page_start, 25).items]
     doc_ids = [d.id for d in query.paginate(page_start, 25).items]
@@ -251,7 +337,7 @@ def filter_collection(collection, contains, excludes, page_start):
     view_data['collection_id'] = c.id
     view_data['current_page'] = page_start
     view_data['total'] = query.count()
-    print(view_data)
+    # print(view_data)
     return render_template('filter_collection.html', create_filtered_collection_form=create_filtered_collection_form, table = docs, table_name = 'documents', headings=headings, project_id=c.project_id, view_data=view_data)
 
 
@@ -333,11 +419,11 @@ def user_allowed_in_project(project_id):
 
 
 def user_projects():
-    print(current_user.admin)
+    # print(current_user.admin)
     if current_user.admin:
         return models.Project.query.all()
     
-    print(current_user.email)
-    print(current_user.group_id)
+    # print(current_user.email)
+    # print(current_user.group_id)
     user_group = models.Group.query.get(current_user.group_id)
     return user_group.projects.all()
