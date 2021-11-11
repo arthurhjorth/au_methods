@@ -54,7 +54,6 @@ class Collection(app.db.Model):
     project_id = app.db.Column(app.db.Integer, app.db.ForeignKey('project.id'))
     filters = app.db.Column(JSON, default={})
     headings = app.db.Column(JSON, default=[])
-    parent_id = app.db.Column(app.db.Integer, app.db.ForeignKey('collection.id'))
     parent_filters = app.db.Column(JSON, default={})
     collection_tags = app.db.Column(JSON, default=[])
     time_created = app.db.Column(app.db.DateTime, nullable=False, default=datetime.utcnow)
