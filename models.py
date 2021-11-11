@@ -1,6 +1,7 @@
 from datetime import datetime
 from sqlalchemy.orm import deferred
 import app
+# from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.types import JSON
 from flask_login import UserMixin
 from flask_login import login_user, current_user, logout_user, login_required
@@ -47,14 +48,17 @@ class Project(app.db.Model):
 class Collection(app.db.Model):
     __tablename__ = 'collection'
     id = app.db.Column(app.db.Integer, primary_key=True)
-    name = app.db.Column(app.db.String(25))
+    name = app.db.Column(app.db.String(25), default='Unnamed')
     documents = app.db.relationship('Document', secondary=collection_documents, lazy='dynamic',
         backref=app.db.backref('collections', lazy='dynamic'))
     project_id = app.db.Column(app.db.Integer, app.db.ForeignKey('project.id'))
-    filters = app.db.Column(JSON, default=[])
+    filters = app.db.Column(JSON, default={})
     headings = app.db.Column(JSON, default=[])
+    parent_id = app.db.Column(app.db.Integer, app.db.ForeignKey('collection.id'))
+    parent_filters = app.db.Column(JSON, default={})
     collection_tags = app.db.Column(JSON, default=[])
     time_created = app.db.Column(app.db.DateTime, nullable=False, default=datetime.utcnow)
+    hidden = app.db.Column(app.db.Boolean, default=False)
 
 class Document(app.db.Model):
     __tablename__ = 'document'

@@ -2,6 +2,7 @@ from operator import add
 import os
 import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
+from sqlalchemy.sql.expression import or_
 from flask_sqlalchemy import SQLAlchemy
 from forms import AddGroupForm, AddCommentForm, AddTagForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
@@ -189,7 +190,14 @@ def try_filters2(collection):
                     operator = f[0]
                     operand = f[1]
                     if operator == 'contains text':
-                        query = query.filter(models.Document.data[field_name].contains(operand))
+                        ## we want to be able to do OR
+                        if "," in operand:
+                            or_words = operand.split(",")
+                            or_words = [word.strip().lower() for word in or_words]
+                            query_filters = [models.Document.data[field_name].contains(word)  for word in or_words]
+                            query = query.filter(or_(*query_filters))
+                        else:
+                            query = query.filter(models.Document.data[field_name].contains(operand))
                     if operator == 'does not contain text':
                         query = query.filter(not_(models.Document.data[field_name].contains(operand)))
             ## because casting to int doesnt work, ,we do these by creating a list and just filtring through each of them.
