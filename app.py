@@ -143,7 +143,7 @@ def view_document2(project_id, doc_id):
 @login_required
 def try_filters2(collection):
     c = models.Collection.query.get(collection)
-    if c.documents.count() != 0:
+    if c.doc_count != 0:
         new_collection = models.Collection(parent_filters=c.filters, parent_id = c.id, project_id = c.project_id, headings=c.headings)
         db.session.add(new_collection)
         db.session.commit()
