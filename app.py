@@ -14,9 +14,7 @@ from flask_migrate import Migrate
 secrets = json.loads(open('secrets.json').read())
 
 app = Flask(__name__)
-print(type(secrets))
-print(secrets['SECRET_KEY'])
-# app.config['SECRET_KEY'] = secrets['secretkey']
+app.config['SECRET_KEY'] = secrets['secretkey']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test_db.db'
@@ -380,8 +378,7 @@ def view_collection(collection, page_start):
 def project(project_id):
     p = models.Project.query.get(project_id)
     # docs_with_comments = list(set([c.document]))
-    #collections_data = [{'collection_id' : c.id, 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
-    collections_data = [{'collection_id' : c.id, 'counts' : c.documents.count(), 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
+    collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
     return render_template('project.html', project=p, collections_data=collections_data)
 
 
