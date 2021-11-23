@@ -12,9 +12,8 @@ from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import text
 secrets = json.loads(open('secrets.json').read())
 
-
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(32)
+app.config['SECRET_KEY'] = secrets['secretkey']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://au_methods_postgres:Hermes_2014@localhost:5432/au_methods_postgres" ## THIS WORKS FOR POSTGRES
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/media/a/data/sqlite/site.db'
@@ -379,7 +378,8 @@ def view_collection(collection, page_start):
 def project(project_id):
     p = models.Project.query.get(project_id)
     # docs_with_comments = list(set([c.document]))
-    collections_data = [{'collection_id' : c.id, 'entries' : c.documents.count(), 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
+    #collections_data = [{'collection_id' : c.id, 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
+    collections_data = [{'collection_id' : c.id, 'counts' : c.documents.count(), 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
     return render_template('project.html', project=p, collections_data=collections_data)
 
 
