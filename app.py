@@ -10,13 +10,14 @@ from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import text
+from flask_migrate import Migrate
 secrets = json.loads(open('secrets.json').read())
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets['secretkey']
+print(type(secrets))
+print(secrets['SECRET_KEY'])
+# app.config['SECRET_KEY'] = secrets['secretkey']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://au_methods_postgres:Hermes_2014@localhost:5432/au_methods_postgres" ## THIS WORKS FOR POSTGRES
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////mnt/media/a/data/sqlite/site.db'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test_db.db'
 db = SQLAlchemy(app)
@@ -24,6 +25,7 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
+migrate = Migrate(app, db)
 
 import models
 import pandas as pd

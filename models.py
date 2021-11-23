@@ -15,7 +15,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 # )
 @app.login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id)) 
+    return User.query.get(int(user_id))
 
 collection_documents = app.db.Table('collection_document',
     app.db.Column('document_id', app.db.Integer, app.db.ForeignKey('document.id'), primary_key=True),
@@ -59,6 +59,7 @@ class Collection(app.db.Model):
     collection_tags = app.db.Column(JSON, default=[])
     time_created = app.db.Column(app.db.DateTime, nullable=False, default=datetime.utcnow)
     hidden = app.db.Column(app.db.Boolean, default=False)
+    doc_count = app.db.Column(app.db.Integer, default=0)
 
 class Document(app.db.Model):
     __tablename__ = 'document'
@@ -105,7 +106,7 @@ class User(app.db.Model, UserMixin):
     admin = app.db.Column(app.db.Boolean, default=False)
     roles = app.db.relationship('Role', secondary=user_roles, lazy='subquery',
         backref=app.db.backref('users', lazy=True))
-    
+
     def get_user_projects(self):
         g = Group.query.get(self.group_id)
         return g.projects
