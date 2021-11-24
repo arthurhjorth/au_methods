@@ -1,0 +1,58 @@
+
+{% extends "layout.html" %}
+
+
+
+{% block content %}
+
+<td><a href='{{ url_for('project', project_id=collection.project_id) }}'><< Back to Project Overview</a></td>
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4">Add, or remove filters.</legend>
+                <div class="form-group">
+                    {{ function_form.field_name.label(class="form-control-label") }}
+                    {% if function_form.field_name.errors %}
+                        {{ function_form.field_name(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in function_form.field_name.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ function_form.field_name(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ function_form.function.label(class="form-control-label") }}
+                    {% if function_form.function.errors %}
+                        {{ function_form.function(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in function_form.function.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ function_form.function(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ function_form.reasoning.label(class="form-control-label") }}
+                    {% if function_form.reasoning.errors %}
+                        {{ function_form.reasoning(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in function_form.reasoning.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ function_form.reasoning(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            <div class="form-group">
+                {{ function_form.apply_function(class="btn btn-outline-info") }}
+                </div>
+        </fieldset>
+        </form>
+
+
+{% endblock content %}
