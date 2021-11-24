@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, IntegerField, TextAreaField, SelectMultipleField, SelectField, RadioField, FormField, FloatField, HiddenField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from wtforms.widgets import TextArea
 
 class LoginForm(FlaskForm):
     email = StringField('Email',
@@ -27,6 +28,12 @@ class AddProjectForm(FlaskForm):
     group = SelectField('Which student group should participate?', validators=[DataRequired()])
     dataset = SelectField('Which dataset will the project work on?', validators=[DataRequired()])
     submit = SubmitField("Create Project")
+
+class ApplyFunctionForm(FlaskForm):
+    field_name = SelectField('Which field do you want to apply the function to?', validators=[DataRequired()])
+    function = SelectField('What kind of function?', validators=[DataRequired()])
+    reasoning = StringField('Tell us what information you are hoping to find with this analysis. What do you expect to find? Why is it relevant for this collection of documents?')
+    apply_function = SubmitField("Apply this function")
 
 class FilterForm2(FlaskForm):
     field_name = SelectField('Which field do you want to filter on?', validators=[DataRequired()])

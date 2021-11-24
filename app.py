@@ -1,10 +1,11 @@
 from operator import add
 import os
+import numpy
 import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 from sqlalchemy.sql.expression import or_
 from flask_sqlalchemy import SQLAlchemy
-from forms import AddGroupForm, AddCommentForm, AddTagForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2
+from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
 from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
@@ -139,6 +140,34 @@ def view_document2(project_id, doc_id):
     return render_template('view_document.html', project_id = project_id, document=the_doc, comment_form = add_comment_form, add_tag_form=add_tag_form, create_tag_form=create_tag_form, doc_data=doc_data)
 
 
+
+@app.route('/apply_function_to_docs/<int:collection>', methods=["POST", "GET"])
+@login_required
+def apply_function(collection):
+    c = models.Collection.query.get(collection)
+    function_form = ApplyFunctionForm() 
+    function_options = ["Word Count", "Sentence Count", "Reading difficulty (Lix)", "Total Sentiment", "Negative Sentiment", "Positive Sentiment"]
+    function_form.function.choices = [(str(func), str(func)) for func in function_options]
+    function_form.field_name.choices = [( str(fieldname), str(fieldname) ) for fieldname in c.headings]
+    if request.method == 'POST':
+        if function_form.function.data == "Total Sentiment":
+            print("total sent")
+            add_sentiment_analysis(c, function_form.field_name.data)
+        if function_form.function.data == "Negative Sentiment":
+            add_sentiment_analysis(c, function_form.field_name.data, positive=False)
+        if function_form.function.data == "Positive Sentiment":
+            add_sentiment_analysis(c, function_form.field_name.data, negative=False)
+        if function_form.function.data == "Word Count":
+            add_word_count(c, function_form.field_name.data)
+        if function_form.function.data == "Sentence Count":
+            add_sentence_count(c, function_form.field_name.data)
+        if function_form.function.data == "Reading difficulty (Lix)":
+            add_sentence_count(c, function_form.field_name.data)
+        return redirect(url_for('view_collection', collection=c.id, page_start=1))
+    return render_template('apply_function_to_doc.html', function_form = function_form, collection=c)
+
+
+
 @app.route('/try_filters2/<int:collection>', methods=["POST", "GET"])
 @login_required
 def try_filters2(collection):
@@ -229,6 +258,8 @@ def try_filters2(collection):
                     new_collection_docs.append(d)
             c.documents = new_collection_docs
             c.filters.update(parent_collection.filters)
+            c.headings = parent_collection.headings
+            flag_modified(c, "headings") 
             # get name from form
             c.name = post_dict['name_of_new_collection']
             flag_modified(c, "filters") 
@@ -368,18 +399,27 @@ def view_collection(collection, page_start):
     doc_ids = [d.id for d in c.documents.paginate(page_start, 25).items]
     for n, doc in enumerate(docs):
         doc['id'] = doc_ids[n]
-    # docs = [d.data for d in c.documents.paginate(page_start, 25).items]
-    collections_data = [{'collection_id' : c.id, 'entries' : c.documents.count(), 'collection_name' : c.name} for c in p.collections]
+        
+    collections_data = [{'collection_id' : c.id, 'entries' : c.doc_count, 'collection_name' : c.name} for c in p.collections]
     headings = sorted(list(set([key for doc in docs for key in doc.keys()])))
     return render_template('view_collection.html', table = docs, current_page = page_start, table_name = 'documents', headings=headings, project_id=p.id, collection=c.id)
 
 @app.route('/project/<int:project_id>', methods=['POST', 'GET'])
 @login_required
 def project(project_id):
+    view = request.args.to_dict().get('view', 0)
     p = models.Project.query.get(project_id)
-    # docs_with_comments = list(set([c.document]))
-    collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters} for c in p.collections]
-    return render_template('project.html', project=p, collections_data=collections_data)
+    collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
+    print(request.form.to_dict())
+    if request.method == 'POST' and 'hide-collection' in request.form.to_dict():
+        collection_id = request.form.to_dict()['hide-collection']
+        print(collection_id)
+        col = models.Collection.query.get(collection_id)
+        col.hidden = True
+        db.session.add(col)
+        db.session.commit()
+    return render_template('project.html', project=p, collections_data=collections_data, view=view)
+
 
 
 app.route("/login", methods=['GET', 'POST'])
@@ -434,3 +474,161 @@ def user_projects():
     # print(current_user.group_id)
     user_group = models.Group.query.get(current_user.group_id)
     return user_group.projects.all()
+
+
+
+def add_sentiment_analysis(collection, fieldname, positive = True, negative = True):
+    positive_words = set([l.strip() for l in open('positive-words.webarchive').readlines()])
+    negative_words = set([l.strip() for l in open('negative-words.webarchive').readlines()])
+    count = 0
+    dict_heading = ""
+    average = 0
+    standard_deviation = 0
+    scores = []
+    if positive and negative:
+        dict_heading  = 'total_sentiment_'+fieldname
+    if positive and not negative:
+        dict_heading  = 'positive_sentiment_'+fieldname
+    if not positive and negative:
+        dict_heading  = 'negative_sentiment_'+fieldname
+    for d in collection.documents:
+        if fieldname in d.data:
+            count = count + 1
+            total_sentiment = 0
+            doc_words = str(d.data[fieldname]).split()
+            for word in doc_words:
+                if positive:
+                    if word in positive_words:
+                        total_sentiment = total_sentiment + 1
+                if negative:
+                    if word in negative_words:
+                        total_sentiment = total_sentiment - 1
+            scores.append(total_sentiment)
+            d.data.update({dict_heading : total_sentiment})
+            flag_modified(d, 'data')
+            db.session.add(d)
+            db.session.merge(d)
+            db.session.flush()
+            if count % 10000 == 0:
+                db.session.commit()
+    collection.headings.append(dict_heading)
+    flag_modified(collection, 'headings')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+    standard_deviation = numpy.std(scores)
+    average = numpy.mean(scores)
+    collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
+    flag_modified(collection, 'analysis_results')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+
+
+
+                
+def add_sentence_count(collection, fieldname):
+    dict_heading = 'sentence_count_'+fieldname
+    average = 0
+    standard_deviation = 0
+    sentence_counts = []
+    count = 0
+    for d in collection.documents:
+        if fieldname in d.data:
+            count = count + 1
+            text = str(d.data[fieldname])
+            text.replace("...", ".")
+            text.replace("!", ".")
+            text.replace("?", ".")
+            sentence_count = len(text.split("."))
+            d.data.update({dict_heading : sentence_count})
+            sentence_counts.append(sentence_count)
+            flag_modified(d, 'data')
+            db.session.add(d)
+            db.session.merge(d)
+            db.session.flush()
+            if count % 10000 == 0:
+                db.session.commit()
+    collection.headings.append(dict_heading)
+    flag_modified(collection, 'headings')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+    standard_deviation = numpy.std(sentence_counts)
+    average = numpy.mean(sentence_counts)
+    collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
+    flag_modified(collection, 'analysis_results')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+
+
+
+def add_word_count(collection, fieldname):
+    dict_heading = 'word_count_'+fieldname
+    count = 0
+    for d in collection.documents:
+        if fieldname in d.data:
+            count = count + 1
+            word_count = len(str(d.data[fieldname]).split())
+            d.data.update({dict_heading : word_count})
+            flag_modified(d, 'data')
+            db.session.add(d)
+            db.session.merge(d)
+            db.session.flush()
+            if count % 10000 == 0:
+                db.session.commit()
+    collection.headings.append(dict_heading)
+    flag_modified(collection, 'headings')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+
+
+def add_lix_rating(collection, fieldname):
+    dict_heading = 'lix_rating'+fieldname
+    average = 0
+    standard_deviation = 0
+    lix_scores = []
+    count = 0
+    for d in collection.documents:
+        if fieldname in d.data:
+            count = count + 1
+            text = str(d.data[fieldname])
+            text.replace("...", ".")
+            text.replace("!", ".")
+            text.replace("?", ".")
+            sentence_count = len(text.split())
+            word_count = len(str(d.data[fieldname]).split())
+            words_longer_than_6 = len([word for word in words if len(word) > 6])
+            lix_score = (word_count / sentence_count) + (words_longer_than_6 * 100 / word_count)
+            lix_scores.append(lix_score)
+            d.data.update({dict_heading : lix_score})
+            flag_modified(d, 'data')
+            db.session.add(d)
+            db.session.merge(d)
+            db.session.flush()
+            if count % 10000 == 0:
+                db.session.commit()
+    collection.headings.append(dict_heading)
+    flag_modified(collection, 'headings')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+    standard_deviation = numpy.std(lix_scores)
+    average = numpy.mean(lix_scores)
+    collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
+    flag_modified(collection, 'analysis_results')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+
+
+

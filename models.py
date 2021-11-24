@@ -57,6 +57,7 @@ class Collection(app.db.Model):
     parent_id = app.db.Column(app.db.Integer, app.db.ForeignKey('collection.id'))
     parent_filters = app.db.Column(JSON, default={})
     collection_tags = app.db.Column(JSON, default=[])
+    analysis_results = app.db.Column(JSON, default={})
     time_created = app.db.Column(app.db.DateTime, nullable=False, default=datetime.utcnow)
     hidden = app.db.Column(app.db.Boolean, default=False)
     doc_count = app.db.Column(app.db.Integer, default=0)

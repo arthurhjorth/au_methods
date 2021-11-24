@@ -3,17 +3,24 @@
 <h1>Overview of {{ project.name }} </h1>
 
 <div class="content-section col-md-12">
+<a href={{ url_for('project', project_id = project.id)  }}?view=1 > View hidden projects</a>
     <h1>Collections in Project</h1>
     {% for c in collections_data %}
+    {% if not c.hidden or view == 1 %}
+
 <div class="content-section col-md-12">
+    <form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="hide-collection">Hide Collection</button></form>
 <p><b>Name of Collection: </b><a href={{ url_for('view_collection', collection=c.collection_id, page_start=1) }} >{{c.collection_name}}</a> (click to view)</p>
 <p><b>Entries:</b> {{ c.counts }}</p>
 <p><b>Filters:</b> {{ c.filters }} </p>
-<a href={{ url_for('try_filters2', collection=c.collection_id) }} >Add filters</a>
+<p><b>Analyses:</b> {{ c.analysis_results }} </p>
+<p><a href={{ url_for('try_filters2', collection=c.collection_id) }} >Add filters</a></p>
+<p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p>
 
 
 
 </div>
+{% endif %}
     {% endfor %}
 </div>
 <div class="content-section col-md-12">
