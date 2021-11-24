@@ -257,7 +257,7 @@ def try_filters2(collection):
                     # print(operand, field_value, d.id, len(new_collection_docs))
                     new_collection_docs.append(d)
             c.documents = new_collection_docs
-            c.doc_count = new_collection_docs.count()
+            c.doc_count = len(new_collection_docs)
             c.filters.update(parent_collection.filters)
             c.headings = parent_collection.headings
             flag_modified(c, "headings") 
