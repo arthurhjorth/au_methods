@@ -258,11 +258,17 @@ def try_filters2(collection):
                     new_collection_docs.append(d)
             c.documents = new_collection_docs
             c.doc_count = len(new_collection_docs)
-            c.filters.update(parent_collection.filters)
+            for k,v in parent_collection.filters.items():
+                if k in c.filters:
+                    c.filters[k].append(v)
+                else:
+                    c.filters[k] = v
             c.headings = parent_collection.headings
             flag_modified(c, "headings") 
             # get name from form
             c.name = post_dict['name_of_new_collection']
+            if c.name == "":
+                c.name == "Unnamed"
             flag_modified(c, "filters") 
             db.session.add(c)
             db.session.merge(c)
