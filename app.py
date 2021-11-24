@@ -418,6 +418,7 @@ def project(project_id):
         col.hidden = True
         db.session.add(col)
         db.session.commit()
+        return redirect(url_for('project', project_id = project_id))
     return render_template('project.html', project=p, collections_data=collections_data, view=view)
 
 
