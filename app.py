@@ -410,15 +410,23 @@ def project(project_id):
     view = request.args.to_dict().get('view', 0)
     p = models.Project.query.get(project_id)
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
+    print(collections_data)
     print(request.form.to_dict())
-    if request.method == 'POST' and 'hide-collection' in request.form.to_dict():
-        collection_id = request.form.to_dict()['hide-collection']
-        print(collection_id)
-        col = models.Collection.query.get(collection_id)
-        col.hidden = True
-        db.session.add(col)
-        db.session.commit()
-        return redirect(url_for('project', project_id = project_id))
+    if request.method == 'POST':
+        if 'hide-collection' in request.form.to_dict():
+            collection_id = request.form.to_dict()['hide-collection']
+            col = models.Collection.query.get(collection_id)
+            col.hidden = True
+            db.session.add(col)
+            db.session.commit()
+            return redirect(url_for('project', project_id = project_id))
+        if 'show-collection' in request.form.to_dict():
+            collection_id = request.form.to_dict()['show-collection']
+            col = models.Collection.query.get(collection_id)
+            col.hidden = False
+            db.session.add(col)
+            db.session.commit()
+            return redirect(url_for('project', project_id = project_id, view='1'))
     return render_template('project.html', project=p, collections_data=collections_data, view=view)
 
 
