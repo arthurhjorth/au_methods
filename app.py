@@ -579,11 +579,15 @@ def add_sentence_count(collection, fieldname):
 
 def add_word_count(collection, fieldname):
     dict_heading = 'word_count_'+fieldname
+    average = 0
+    standard_deviation = 0
+    word_counts = []
     count = 0
     for d in collection.documents:
         if fieldname in d.data:
             count = count + 1
             word_count = len(str(d.data[fieldname]).split())
+            word_counts.append(word_count)
             d.data.update({dict_heading : word_count})
             flag_modified(d, 'data')
             db.session.add(d)
@@ -593,6 +597,14 @@ def add_word_count(collection, fieldname):
                 db.session.commit()
     collection.headings.append(dict_heading)
     flag_modified(collection, 'headings')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit() 
+    standard_deviation = numpy.std(word_counts)
+    average = numpy.mean(word_counts)
+    collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
+    flag_modified(collection, 'analysis_results')
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
