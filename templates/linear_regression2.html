@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<h1>Linear Regression</h1>
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4"></legend>
+                <div class="form-group">
+                    {{ linear_regression_form.x_heading.label(class="form-control-label") }}
+                    {% if linear_regression_form.x_heading.errors %}
+                        {{ linear_regression_form.x_heading(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in linear_regression_form.x_heading.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ linear_regression_form.x_heading(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ linear_regression_form.y_heading.label(class="form-control-label") }}
+                    {% if linear_regression_form.y_heading.errors %}
+                        {{ linear_regression_form.y_heading(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in linear_regression_form.y_heading.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ linear_regression_form.y_heading(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            <div class="form-group">
+                {{ linear_regression_form.submit_linear_regression(class="btn btn-outline-info") }}
+                </div>
+        </fieldset>
+        </form>
+
+{% endblock content %}

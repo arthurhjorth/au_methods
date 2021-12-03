@@ -29,6 +29,15 @@ class AddProjectForm(FlaskForm):
     dataset = SelectField('Which dataset will the project work on?', validators=[DataRequired()])
     submit = SubmitField("Create Project")
 
+class LinearRegressionForm2(FlaskForm):
+    x_heading = SelectField('Choose data for your X axis (Number data only)', validators=[DataRequired()])
+    y_heading = SelectField('Choose data for your Y axis (Number data only)', validators=[DataRequired()])
+    submit_linear_regression = SubmitField("Do a Linear Regression on these Data")
+
+class LinearRegressionForm(FlaskForm):
+    collection = SelectField('Choose the collection you want to do a linear regression on', validators=[DataRequired()])
+    submit_collections = SubmitField("Choose this collection")
+
 class ApplyFunctionForm(FlaskForm):
     field_name = SelectField('Which field do you want to apply the function to?', validators=[DataRequired()])
     function = SelectField('What kind of function?', validators=[DataRequired()])

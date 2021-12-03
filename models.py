@@ -32,7 +32,14 @@ user_roles = app.db.Table('user_roles',
     app.db.Column('role_id', app.db.Integer, app.db.ForeignKey('role.id'), primary_key=True)
 )
 
-
+class Analysis(app.db.Model):
+    id = app.db.Column(app.db.Integer, primary_key=True)
+    name = app.db.Column(app.db.String(25))
+    group_id = app.db.Column(app.db.Integer, app.db.ForeignKey('group.id'))
+    project_id = app.db.Column(app.db.Integer, app.db.ForeignKey('project.id'))
+    data = app.db.Column(JSON, default={})
+    reflections = app.db.Column(app.db.String(2000))
+    name = app.db.Column(app.db.String(25))
 
 class Project(app.db.Model):
     __tablename__ = 'project'

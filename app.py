@@ -1,17 +1,21 @@
 from operator import add
+import matplotlib.pyplot as plt
 import os
-import numpy
+import numpy as np
 import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 from sqlalchemy.sql.expression import or_
 from flask_sqlalchemy import SQLAlchemy
-from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2
+from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2, LinearRegressionForm, LinearRegressionForm2
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
 from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import text
 from flask_migrate import Migrate
+from sklearn import datasets, linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+
 secrets = json.loads(open('secrets.json').read())
 
 app = Flask(__name__)
@@ -144,14 +148,15 @@ def view_document2(project_id, doc_id):
 @app.route('/apply_function_to_docs/<int:collection>', methods=["POST", "GET"])
 @login_required
 def apply_function(collection):
-    c = models.Collection.query.get(collection)
+    project_id = 0
     function_form = ApplyFunctionForm() 
     function_options = ["Word Count", "Sentence Count", "Reading difficulty (Lix)", "Total Sentiment", "Negative Sentiment", "Positive Sentiment"]
     function_form.function.choices = [(str(func), str(func)) for func in function_options]
+    c = models.Collection.query.get(collection)
+    project_id = c.project_id
     function_form.field_name.choices = [( str(fieldname), str(fieldname) ) for fieldname in c.headings]
     if request.method == 'POST':
         if function_form.function.data == "Total Sentiment":
-            print("total sent")
             add_sentiment_analysis(c, function_form.field_name.data)
         if function_form.function.data == "Negative Sentiment":
             add_sentiment_analysis(c, function_form.field_name.data, positive=False)
@@ -164,7 +169,7 @@ def apply_function(collection):
         if function_form.function.data == "Reading difficulty (Lix)":
             add_sentence_count(c, function_form.field_name.data)
         return redirect(url_for('view_collection', collection=c.id, page_start=1))
-    return render_template('apply_function_to_doc.html', function_form = function_form, collection=c)
+    return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id)
 
 
 
@@ -384,6 +389,79 @@ def filter_collection(collection, contains, excludes, page_start):
     view_data['total'] = query.count()
     # print(view_data)
     return render_template('filter_collection.html', create_filtered_collection_form=create_filtered_collection_form, table = docs, table_name = 'documents', headings=headings, project_id=c.project_id, view_data=view_data)
+
+
+@app.route('/linear_regression1/<int:project>', methods=["POST", "GET"])
+@login_required
+def linear_regression(project):
+    if request.method == "POST":
+        rq_form = request.form.to_dict()
+        print(request.form.to_dict())
+        return redirect(url_for('linear_regression2', collection=rq_form['collection']))
+    p = models.Project.query.get(project)
+    linear_regression_form = LinearRegressionForm()
+    colls = [p for p in p.collections if not p.hidden]
+    linear_regression_form.collection.choices = [(c.id, c.name) for c in colls] 
+    return render_template('linear_regression1.html', linear_regression_form=linear_regression_form)
+
+def data_to_float(astr):
+    if type(astr) == int:
+        return float(astr)
+    if type(astr) == str:
+        astr = astr.replace(",", "")
+        return float(astr)
+    return astr
+
+@app.route('/linear_regression2/<int:collection>', methods=["POST", "GET"])
+@login_required
+def linear_regression2(collection):
+    coll = models.Collection.query.get(collection)
+    if request.method == "POST":
+        rq_form = request.form.to_dict()
+        x_heading = rq_form['x_heading']
+        y_heading = rq_form['y_heading']
+        print(request.form.to_dict())
+        xy = [(d.data[x_heading], d.data[y_heading]) for d in coll.documents if x_heading in d.data and y_heading in d.data]
+
+        x = [np.array(data_to_float(t[0])) for t in xy]
+        y = [data_to_float(t[1]) for t in xy]
+        # Split the data into training/testing sets
+        diabetes_X_train = diabetes_X[:-20]
+        diabetes_X_test = diabetes_X[-20:]
+
+        # Split the targets into training/testing sets
+        diabetes_y_train = diabetes_y[:-20]
+        diabetes_y_test = diabetes_y[-20:]
+
+        # Create linear regression object
+        regr = linear_model.LinearRegression()
+
+        # Train the model using the training sets
+        regr.fit(diabetes_X_train, diabetes_y_train)
+
+        # Make predictions using the testing set
+        diabetes_y_pred = regr.predict(diabetes_X_test)
+
+        # The coefficients
+        print("Coefficients: \n", regr.coef_)
+        # The mean squared error
+        print("Mean squared error: %.2f" % mean_squared_error(diabetes_y_test, diabetes_y_pred))
+        # The coefficient of determination: 1 is perfect prediction
+        print("Coefficient of determination: %.2f" % r2_score(diabetes_y_test, diabetes_y_pred))
+
+        # Plot outputs
+        plt.scatter(diabetes_X_test, diabetes_y_test, color="black")
+        plt.plot(diabetes_X_test, diabetes_y_pred, color="blue", linewidth=3)
+
+        plt.xticks(())
+        plt.yticks(())
+
+        plt.show()
+        # return redirect(url_for('linear_regression2', collection1=rq_form['collection1'], collection2=rq_form['collection2']))
+    linear_regression_form2 = LinearRegressionForm2()
+    linear_regression_form2.x_heading.choices = [(str(h), str(h)) for h in coll.headings] 
+    linear_regression_form2.y_heading.choices = [(str(h), str(h)) for h in coll.headings] 
+    return render_template('linear_regression2.html', linear_regression_form=linear_regression_form2)
 
 
 @app.route('/view_tag/<int:tag_id>/<int:page_start>', methods=["POST", "GET"])
