@@ -32,6 +32,19 @@
                         {{ linear_regression_form.y_heading(class="form-control form-control-lg") }}
                     {% endif %}
                 </div>
+                <div class="form-group">
+                    {{ linear_regression_form.reflections.label(class="form-control-label") }}
+                    {% if linear_regression_form.reflections.errors %}
+                        {{ linear_regression_form.reflections(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in linear_regression_form.reflections.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ linear_regression_form.reflections(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
             <div class="form-group">
                 {{ linear_regression_form.submit_linear_regression(class="btn btn-outline-info") }}
                 </div>

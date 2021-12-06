@@ -22,6 +22,11 @@ class RegistrationForm(FlaskForm):
                                      validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Sign Up')
 
+class HistogramForm2(FlaskForm):
+    data = SelectField('Which data do you want to see a histogram of?', validators=[DataRequired()])
+    reflections = TextAreaField('What do you expect to find? How will this help you answer your larger questions?', validators=[DataRequired()])
+    submit_histogram = SubmitField("Create histogram")
+
 
 class AddProjectForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
@@ -32,7 +37,20 @@ class AddProjectForm(FlaskForm):
 class LinearRegressionForm2(FlaskForm):
     x_heading = SelectField('Choose data for your X axis (Number data only)', validators=[DataRequired()])
     y_heading = SelectField('Choose data for your Y axis (Number data only)', validators=[DataRequired()])
+    reflections = TextAreaField('What do you expect to find? How will this help you answer your larger questions?', validators=[DataRequired()])
     submit_linear_regression = SubmitField("Do a Linear Regression on these Data")
+
+
+class TTestForm(FlaskForm):
+    collection1 = SelectField('Select the first collection you want to do a T-Test on', validators=[DataRequired()])
+    collection2 = SelectField('Select the second collection you want to do a T-Test on', validators=[DataRequired()])
+    submit_collections = SubmitField("Choose these collections")
+
+class TTestForm2(FlaskForm):
+    data1 = SelectField('Choose the first set of data for your t-test', validators=[DataRequired()])
+    data2 = SelectField('Choose the second set of data for your t-test', validators=[DataRequired()])
+    reflections = TextAreaField('What do you expect to find? How will this help you answer your larger questions?', validators=[DataRequired()])
+    submit_ttest = SubmitField("Do a T-Test of these two sets of data")
 
 class LinearRegressionForm(FlaskForm):
     collection = SelectField('Choose the collection you want to do a linear regression on', validators=[DataRequired()])
