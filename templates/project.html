@@ -1,35 +1,57 @@
 {% extends "layout.html" %}
 {% block content %}
 <h1>Overview of {{ project.name }} </h1>
+<div class="content-section col-md-12">
+    <h1>Analyses and Visualizations</h1>
+<div class="content-section col-md-12">
+<h2>Create new Analysis</h2>
+<div>
+<a href={{url_for('linear_regression', project=project.id)}}>Linear Regression</a>
+<p>You can use this to explore whether two variables correlate.</p>
+</div>
+<div>
+<a href={{url_for('t_test', project=project.id)}}>Two-sided T-test</a>
+<p>You can use this to explore whether two different sets of numbers are different from each other.</p>
+</div>
+<b>Create new Visualization</b>
+<div>
+<a href={{url_for('histogram', project=project.id)}}>Histogram</a>
+<p>You can use this to visualize counts of various things, e.g. how many 1-star reviews and how many 5-star reviews are there.</p>
+</div>
 
+</div>
+<div class="content-section col-md-12">
+    <h2>Finished analyses and Visualizations</h2>
+    {% for a in project.analyses %}
+<div class="content-section col-md-12">
+    <p><b>Name of Analysis: </b><a href={{ url_for('view_analysis', analysis_id=a.id, page_start=1) }} >{{a.name}}</a></p>
+    </div>
+    {% endfor %}
+</div>
+</div>
 <div class="content-section col-md-12">
 <a href={{ url_for('project', project_id = project.id)  }}?view=1 >View hidden Collections</a>
 <a href={{ url_for('project', project_id = project.id)  }}> View only shown Collections</a>
-    <h1>Collections in Project</h1>
-    {% for c in collections_data %}
+<h1>Collections</h1>
+{% for c in collections_data %}
     {% if not c.hidden or view == '1' %}
+        <div class="content-section col-md-12">
 
-<div class="content-section col-md-12">
-
-{% if not c.hidden %}
-    <form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="hide-collection">Hide Collection</button></form>
-{% endif %}
-{% if c.hidden %}
-<form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="show-collection">Show Collection</button></form>
-{% endif %}
-
-<p><b>Name of Collection: </b><a href={{ url_for('view_collection', collection=c.collection_id, page_start=1) }} >{{c.collection_name}}</a> (click to view)</p>
-<p><b>Entries:</b> {{ c.counts }}</p>
-<p><b>Filters:</b> {{ c.filters }} </p>
-<p><b>Analyses:</b> {{ c.analysis_results }} </p>
-<p><a href={{ url_for('try_filters2', collection=c.collection_id) }} >Add filters</a></p>
-<p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p>
-
-
-
-</div>
-{% endif %}
-    {% endfor %}
+        {% if not c.hidden %}
+            <form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="hide-collection">Hide Collection</button></form>
+        {% endif %}
+        {% if c.hidden %}
+            <form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="show-collection">Show Collection</button></form>
+        {% endif %}
+        <p><b>Name of Collection: </b><a href={{ url_for('view_collection', collection=c.collection_id, page_start=1) }} >{{c.collection_name}}</a> (click to view)</p>
+        <p><b>Entries:</b> {{ c.counts }}</p>
+        <p><b>Filters:</b> {{ c.filters }} </p>
+        <p><b>Analyses:</b> {{ c.analysis_results }} </p>
+        <p><a href={{ url_for('try_filters2', collection=c.collection_id) }} >Add filters</a></p>
+        <p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p>
+        </div>
+    {% endif %}
+{% endfor %}
 </div>
 <div class="content-section col-md-12">
 <p><b>View by tag:</b></p>

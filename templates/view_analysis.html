@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block content %}
+<a href={{url_for('project', project_id=analysis.project_id)}}><< Back to Project</a>
+<h3>{{analysis.name}}</h3>
+{% if 'image' in analysis.data %}
+<img src="{{url_for('static', filename='images/' + analysis.data['image'] + '.png')}}">
+{% endif %}
+{% for k,v in analysis.data.items() %}
+{% if k != 'image' %}
+<p><b>{{ k }} </b> : {{v}}</p>
+{% endif %}
+{% endfor %}
+{% endblock %}

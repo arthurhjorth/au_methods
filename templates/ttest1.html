@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<h1>Choose the collections from which you will compare data (they can be the same)</h1>
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4"></legend>
+                <div class="form-group">
+                    {{ ttest_form.collection1.label(class="form-control-label") }}
+                    {% if ttest_form.collection1.errors %}
+                        {{ ttest_form.collection1(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in ttest_form.collection1.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ ttest_form.collection1(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ ttest_form.collection2.label(class="form-control-label") }}
+                    {% if ttest_form.collection2.errors %}
+                        {{ ttest_form.collection2(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in ttest_form.collection2.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ ttest_form.collection2(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            <div class="form-group">
+                {{ ttest_form.submit_collections(class="btn btn-outline-info") }}
+                </div>
+        </fieldset>
+        </form>
+
+{% endblock content %}

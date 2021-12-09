@@ -6,7 +6,7 @@ import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 from sqlalchemy.sql.expression import or_
 from flask_sqlalchemy import SQLAlchemy
-from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2, LinearRegressionForm, LinearRegressionForm2
+from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2, LinearRegressionForm, LinearRegressionForm2, TTestForm, TTestForm2, HistogramForm2
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
 from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
@@ -15,6 +15,7 @@ from sqlalchemy import text
 from flask_migrate import Migrate
 from sklearn import datasets, linear_model
 from sklearn.metrics import mean_squared_error, r2_score
+from scipy import stats
 
 secrets = json.loads(open('secrets.json').read())
 
@@ -169,7 +170,7 @@ def apply_function(collection):
         if function_form.function.data == "Reading difficulty (Lix)":
             add_lix_rating(c, function_form.field_name.data)
         return redirect(url_for('view_collection', collection=c.id, page_start=1))
-    return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id)
+    return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id, collection=c)
 
 
 
@@ -390,8 +391,122 @@ def filter_collection(collection, contains, excludes, page_start):
     # print(view_data)
     return render_template('filter_collection.html', create_filtered_collection_form=create_filtered_collection_form, table = docs, table_name = 'documents', headings=headings, project_id=c.project_id, view_data=view_data)
 
+@app.route('/t-test/<int:project>', methods=["POST", "GET"])
+@login_required
+def t_test(project):
+    p = models.Project.query.get(project)
+    colls = p.collections
+    ttest_form = TTestForm()
+    ttest_form.collection1.choices = [(c.id, c.name) for c in colls if not c.hidden]
+    ttest_form.collection2.choices = [(c.id, c.name) for c in colls if not c.hidden]
+    if request.method == "POST":
+        rq_form = request.form.to_dict()
+        print(request.form.to_dict())
+        return redirect(url_for('t_test2', collection1=rq_form['collection1'], collection2=rq_form['collection2']))
+    return render_template('ttest1.html', ttest_form=ttest_form)
 
-@app.route('/linear_regression1/<int:project>', methods=["POST", "GET"])
+
+
+@app.route('/t-test2/<int:collection1>/<int:collection2>', methods=['POST', 'GET'])
+@login_required
+def t_test2(collection1, collection2):
+    coll1 = models.Collection.query.get(collection1)
+    coll2 = models.Collection.query.get(collection2)
+    if request.method == "POST":
+        rq_form = request.form.to_dict()
+        print(rq_form['data1'])
+        print(rq_form['data2'])
+        data1 = np.array([d.data[rq_form['data1']] for d  in coll1.documents])
+        data2 = np.array([d.data[rq_form['data2']] for d  in coll2.documents])
+        test_result = stats.ttest_ind(data1, data2, equal_var=False)
+        print(stats.tmean(data1))
+        print(stats.tmean(data2))
+        data = {}
+        data['data1'] = rq_form['data1'] + " from collection " + coll1.name + "(ID " + str(coll1.id) + ")"
+        data['data2'] = rq_form['data2'] + " from collection " + coll2.name + "(ID " + str(coll2.id) + ")"
+        data['t-statistic'] = test_result[0]
+        # data['p-value'] = test_result[1]
+        data['data1-mean'] = stats.tmean(data1)
+        data['data2-mean'] = stats.tmean(data2)
+        data['data1-std'] = stats.tstd(data1)
+        data['data2-std'] = stats.tstd(data2)
+        data['data1-sample-size'] = len(data1)
+        data['data2-sample-size'] = len(data2)
+        data['type'] = "T-test"
+        data['reflections'] = rq_form['reflections']
+
+        new_analysis = models.Analysis()
+        new_analysis.name = "T-test on " + data['data1'] + " " + data['data2']
+        new_analysis.group_id = current_user.group_id
+        new_analysis.project_id = coll1.project_id
+        new_analysis.data = data
+        db.session.add(new_analysis)
+        db.session.commit()
+
+        return redirect(url_for('project', project_id=coll1.project_id))
+    ttest_form2 = TTestForm2()
+    ttest_form2.data1.choices = [(str(h), str(h)) for h in coll1.headings] 
+    ttest_form2.data2.choices = [(str(h), str(h)) for h in coll2.headings] 
+    return render_template('ttest2.html', ttest_form2=ttest_form2, c1name = coll1.name, c2name = coll2.name)
+    ttest_form_form2 = TTestForm2()
+    ttest_form_form2.data1.choices = [(str(h), str(h)) for h in coll1.headings] 
+    ttest_form_form2.data2.choices = [(str(h), str(h)) for h in coll2.headings] 
+    return render_template('ttest2.html', ttest_form2=ttest_form_form2)
+
+
+@app.route('/histogram1/<int:project>', methods=["post", "get"])
+@login_required
+def histogram(project):
+    if request.method == "POST":
+        rq_form = request.form.to_dict()
+        return redirect(url_for('histogram2', collection=rq_form['collection']))
+    p = models.Project.query.get(project)
+    linear_regression_form = LinearRegressionForm()
+    colls = [p for p in p.collections if not p.hidden]
+    linear_regression_form.collection.choices = [(c.id, c.name) for c in colls] 
+    return render_template('histogram.html', linear_regression_form=linear_regression_form)
+
+@app.route('/histogram2/<int:collection>', methods=["POST", "GET"])
+@login_required
+def histogram2(collection):
+    coll = models.Collection.query.get(collection)
+    if request.method == "POST":
+        rq_form = request.form.to_dict()
+        data = rq_form['data']
+        in_data = [data_to_float(d.data[data]) for d in coll.documents if data in d.data]
+        plt.xlim([min(in_data), max(in_data)])
+        plt.hist(in_data)
+        # plt.xscale(5))
+        plt.xlabel = data
+
+        name = "Histogram of " + data + " from collection " + coll.name + "(ID " + str(coll.id) + ")"
+        fig_name = "Histogram of " + data + " from collection " + coll.name + "_ID " + str(coll.id) + "_"
+        fig_name = fig_name.replace(" ", "_")
+        plt.savefig('static/images/' + fig_name)
+        plt.clf()
+
+        new_analysis = models.Analysis()
+        new_analysis.name = name
+        new_analysis.group_id = current_user.group_id
+        new_analysis.project_id = coll.project_id
+        data = {}
+        data['image'] = fig_name
+        data['Total documents'] = len(in_data)
+        # mean = sum(in_data) / len(in_data)
+        data['Mean of value'] = stats.tmean(in_data)
+        data['STD of value'] = stats.tstd(in_data)
+        data['reflections'] = rq_form['reflections']
+        new_analysis.data = data
+    
+        db.session.add(new_analysis)
+        db.session.commit()
+        return redirect(url_for('project', project_id=coll.project_id))
+
+    histogram_form2 = HistogramForm2()
+    histogram_form2.data.choices = [(str(h), str(h)) for h in coll.headings] 
+    return render_template('histogram2.html', histogram_form2=histogram_form2)
+
+@app.route('/linear_regression1/<int:project>', methods=["post", "get"])
 @login_required
 def linear_regression(project):
     if request.method == "POST":
@@ -417,22 +532,31 @@ def data_to_float(astr):
 def linear_regression2(collection):
     coll = models.Collection.query.get(collection)
     if request.method == "POST":
+        plt.figure().clear()
+        plt.close()
+        plt.cla()
+        plt.clf()
+
+
+
         rq_form = request.form.to_dict()
         x_heading = rq_form['x_heading']
         y_heading = rq_form['y_heading']
-        print(request.form.to_dict())
         xy = [(d.data[x_heading], d.data[y_heading]) for d in coll.documents if x_heading in d.data and y_heading in d.data]
 
-        x = [np.array(data_to_float(t[0])) for t in xy]
-        y = [data_to_float(t[1]) for t in xy]
+        sample = int(coll.doc_count / 5)
+        x = np.array(([np.array(data_to_float(t[0])) for t in xy]))
+        x = x.reshape(-1, 1)
+        y = np.array([data_to_float(t[1]) for t in xy])
         # Split the data into training/testing sets
         # take half here, REMOVE the hard coding
-        x_train = x[:-20]
-        x_test = x[-20:]
+        x_train = x[:-sample]
+        x_test = x[-sample:]
 
         # Split the targets into training/testing sets
-        y_train = y[:-20]
-        y_test = y[-20:]
+        y_train = y[:-sample]
+        y_test = y[-sample:]
+
 
         # Create linear regression object
         regr = linear_model.LinearRegression()
@@ -450,28 +574,48 @@ def linear_regression2(collection):
         # The coefficient of determination: 1 is perfect prediction
         print("Coefficient of determination: %.2f" % r2_score(y_test, y_pred))
 
-        fig_name = "Linear regression on " + x_heading + " & " + y_heading + "on " + coll.name
+        fig_name = "Linear regression on " + x_heading + " and " + y_heading + " on " + coll.name
 
+        fig_name = fig_name.replace(" ", "_")
         data = {}
-        data['Coefficients'] = regr.coef_
+        data['Coefficients'] = regr.coef_[0]
         data['MSE'] = mean_squared_error(y_test, y_pred)
-        data['Coefficients of determination'] = r2_score(y_test, y_pred)
+        data['Coefficients of determination (R2)'] = r2_score(y_test, y_pred)
         data['image'] = fig_name
+        data['type'] = 'LinearRegression'
+        data['reflections'] = rq_form['reflections']
+
 
         # Plot outputs
         plt.scatter(x_test, y_test, color="black")
-        plt.plot(x_test, y_pred, color="blue", linewidth=3)
+        plt.plot(x_test, y_pred, color="blue", linewidth=2)
+        # plt.ylabel(y_heading)
+        # plt.xlabel(x_heading)
 
-        plt.xticks(())
-        plt.yticks(())
+        plt.savefig('static/images/'+fig_name)
+        plt.clf()
 
-        plt.savefig(fig_name)
-        # return redirect(url_for('linear_regression2', collection1=rq_form['collection1'], collection2=rq_form['collection2']))
+        # now save the analysis databse object
+        new_analysis = models.Analysis()
+        new_analysis.name = fig_name[:250]
+        new_analysis.group_id = current_user.group_id
+        new_analysis.project_id = coll.project_id
+        new_analysis.data = data
+    
+        db.session.add(new_analysis)
+        db.session.commit()
+
+        return redirect(url_for('project', project_id=coll.project_id))
     linear_regression_form2 = LinearRegressionForm2()
     linear_regression_form2.x_heading.choices = [(str(h), str(h)) for h in coll.headings] 
     linear_regression_form2.y_heading.choices = [(str(h), str(h)) for h in coll.headings] 
     return render_template('linear_regression2.html', linear_regression_form=linear_regression_form2)
 
+
+@app.route('/view_analysis/<int:analysis_id>')
+def view_analysis(analysis_id):
+    analysis = models.Analysis.query.get(analysis_id)
+    return render_template('view_analysis.html', analysis=analysis)
 
 @app.route('/view_tag/<int:tag_id>/<int:page_start>', methods=["POST", "GET"])
 @login_required
@@ -504,8 +648,6 @@ def project(project_id):
     view = request.args.to_dict().get('view', 0)
     p = models.Project.query.get(project_id)
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
-    print(collections_data)
-    print(request.form.to_dict())
     if request.method == 'POST':
         if 'hide-collection' in request.form.to_dict():
             collection_id = request.form.to_dict()['hide-collection']

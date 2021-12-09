@@ -34,12 +34,11 @@ user_roles = app.db.Table('user_roles',
 
 class Analysis(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
-    name = app.db.Column(app.db.String(25))
+    name = app.db.Column(app.db.String(250))
     group_id = app.db.Column(app.db.Integer, app.db.ForeignKey('group.id'))
     project_id = app.db.Column(app.db.Integer, app.db.ForeignKey('project.id'))
     data = app.db.Column(JSON, default={})
     reflections = app.db.Column(app.db.String(2000))
-    name = app.db.Column(app.db.String(25))
 
 class Project(app.db.Model):
     __tablename__ = 'project'
@@ -50,6 +49,7 @@ class Project(app.db.Model):
     tags = app.db.relationship('Tag')
     comments = app.db.relationship('Comment')
     time_created = app.db.Column(app.db.DateTime, nullable=False, default=datetime.utcnow)
+    analyses = app.db.relationship('Analysis')
 
 
 class Collection(app.db.Model):

@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<h1>Do a t-test on the following two sets of data points</h1>
+<p>The first dataset will be extracted from collection "<b>{{ c1name }}"</b></p>
+<p>The second dataset will be extracted from collection "<b>{{ c2name }}"</b></p>
+    <form method="POST" action="">
+        <fieldset class="form-group">
+               <legend class="border-bottom mb-4"></legend>
+                <div class="form-group">
+                    {{ ttest_form2.data1.label(class="form-control-label") }}
+                    {% if ttest_form2.data1.errors %}
+                        {{ ttest_form2.data1(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in ttest_form2.data1.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ ttest_form2.data1(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ ttest_form2.data2.label(class="form-control-label") }}
+                    {% if ttest_form2.data2.errors %}
+                        {{ ttest_form2.data2(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in ttest_form2.data2.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ ttest_form2.data2(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ ttest_form2.reflections.label(class="form-control-label") }}
+                    {% if ttest_form2.reflections.errors %}
+                        {{ ttest_form2.reflections(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in ttest_form2.reflections.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ ttest_form2.reflections(class="form-control form-control-lg") }}
+                    {% endif %}
+                </div>
+            <div class="form-group">
+                {{ ttest_form2.submit_ttest(class="btn btn-outline-info") }}
+                </div>
+        </fieldset>
+        </form>
+
+{% endblock content %}
