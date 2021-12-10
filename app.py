@@ -168,7 +168,7 @@ def apply_function(collection):
         if function_form.function.data == "Sentence Count":
             add_sentence_count(c, function_form.field_name.data)
         if function_form.function.data == "Reading difficulty (Lix)":
-            add_sentence_count(c, function_form.field_name.data)
+            add_lix_rating(c, function_form.field_name.data)
         return redirect(url_for('view_collection', collection=c.id, page_start=1))
     return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id, collection=c)
 
