@@ -168,7 +168,7 @@ def apply_function(collection):
         if function_form.function.data == "Sentence Count":
             add_sentence_count(c, function_form.field_name.data)
         if function_form.function.data == "Reading difficulty (Lix)":
-            add_sentence_count(c, function_form.field_name.data)
+            add_lix_rating(c, function_form.field_name.data)
         return redirect(url_for('view_collection', collection=c.id, page_start=1))
     return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id, collection=c)
 
@@ -762,8 +762,8 @@ def add_sentiment_analysis(collection, fieldname, positive = True, negative = Tr
     db.session.merge(collection)
     db.session.flush()
     db.session.commit() 
-    standard_deviation = numpy.std(scores)
-    average = numpy.mean(scores)
+    standard_deviation = np.std(scores)
+    average = np.mean(scores)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
     flag_modified(collection, 'analysis_results')
     db.session.add(collection)
@@ -802,8 +802,8 @@ def add_sentence_count(collection, fieldname):
     db.session.merge(collection)
     db.session.flush()
     db.session.commit() 
-    standard_deviation = numpy.std(sentence_counts)
-    average = numpy.mean(sentence_counts)
+    standard_deviation = np.std(sentence_counts)
+    average = np.mean(sentence_counts)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
     flag_modified(collection, 'analysis_results')
     db.session.add(collection)
@@ -837,8 +837,8 @@ def add_word_count(collection, fieldname):
     db.session.merge(collection)
     db.session.flush()
     db.session.commit() 
-    standard_deviation = numpy.std(word_counts)
-    average = numpy.mean(word_counts)
+    standard_deviation = np.std(word_counts)
+    average = np.mean(word_counts)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
     flag_modified(collection, 'analysis_results')
     db.session.add(collection)
@@ -879,8 +879,8 @@ def add_lix_rating(collection, fieldname):
     db.session.merge(collection)
     db.session.flush()
     db.session.commit() 
-    standard_deviation = numpy.std(lix_scores)
-    average = numpy.mean(lix_scores)
+    standard_deviation = np.std(lix_scores)
+    average = np.mean(lix_scores)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
     flag_modified(collection, 'analysis_results')
     db.session.add(collection)
