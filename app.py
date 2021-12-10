@@ -857,10 +857,11 @@ def add_lix_rating(collection, fieldname):
         if fieldname in d.data:
             count = count + 1
             text = str(d.data[fieldname])
+            words = text.split()
             text.replace("...", ".")
             text.replace("!", ".")
             text.replace("?", ".")
-            sentence_count = len(text.split())
+            sentence_count = len(text.split("."))
             word_count = len(str(d.data[fieldname]).split())
             words_longer_than_6 = len([word for word in words if len(word) > 6])
             lix_score = (word_count / sentence_count) + (words_longer_than_6 * 100 / word_count)
