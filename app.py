@@ -754,7 +754,7 @@ def add_sentiment_analysis(collection, fieldname, positive = True, negative = Tr
             db.session.add(d)
             db.session.merge(d)
             db.session.flush()
-            if count % 10000 == 0:
+            if count % 50000 == 0:
                 db.session.commit()
     collection.headings.append(dict_heading)
     flag_modified(collection, 'headings')
@@ -794,7 +794,7 @@ def add_sentence_count(collection, fieldname):
             db.session.add(d)
             db.session.merge(d)
             db.session.flush()
-            if count % 10000 == 0:
+            if count % 50000 == 0:
                 db.session.commit()
     collection.headings.append(dict_heading)
     flag_modified(collection, 'headings')
@@ -829,7 +829,7 @@ def add_word_count(collection, fieldname):
             db.session.add(d)
             db.session.merge(d)
             db.session.flush()
-            if count % 10000 == 0:
+            if count % 50000 == 0:
                 db.session.commit()
     collection.headings.append(dict_heading)
     flag_modified(collection, 'headings')
@@ -870,7 +870,7 @@ def add_lix_rating(collection, fieldname):
             db.session.add(d)
             db.session.merge(d)
             db.session.flush()
-            if count % 10000 == 0:
+            if count % 50000 == 0:
                 db.session.commit()
     collection.headings.append(dict_heading)
     flag_modified(collection, 'headings')
