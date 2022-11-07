@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy.orm import deferred
 import app
 # from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.types import JSON
 from flask_login import UserMixin
 from flask_login import login_user, current_user, logout_user, login_required

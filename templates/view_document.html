@@ -5,13 +5,21 @@
 <td><a href='{{ url_for('project', project_id=project_id) }}'><< Back to Project Overview</a></td>
 
 <div class="content-section">
-{{ document.data}}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class ="col ">
+
+<!-- {{ document.data}} -->
+{% for k, v in document.data.items() %}
+<p><strong> {{ k }} </strong> : {{ v }} </p>
+
+{% endfor %}
 </div>
 
-<div class="container">
-    <div class="row justify-content-md-center">
-        <div class ="col col-md-auto">
-            <legend class="border-bottom mb-4">Comments</legend>
+<div class="col col-md-auto">
+        <div class="content-section">
+        <div class ="col ">
+            <legend class="border-bottom mb-2">Comments</legend>
             {% for comment in doc_data['comments'] %}
             <div class="content-section">
                 <p><b>{{ comment[0] }} </b></p>
@@ -23,9 +31,9 @@
 
         <form method="POST" action="">
         <fieldset class="form-group">
-            <legend class="border-bottom mb-4">Add Comment</legend>
+            <legend class="border-bottom mb-2">Add Comment</legend>
                 <div class="form-group">
-                {{ comment_form.text.label(class="form-control-label") }}
+                <!-- {{ comment_form.text.label(class="form-control-label") }} -->
                 {% if comment_form.text.errors %}
                     {{ comment_form.text(class="form-control form-control-lg is-invalid") }}
                     <div class="invalid-feedback">
@@ -46,15 +54,17 @@
         </fieldset>
         </form>
     </div>
+    </div>
 
-<div class="col col-md-auto">
-    <legend class="border-bottom mb-4">Currently tagged as:</legend>
+    <legend class="border-bottom mb-4">Current Tags</legend>
     {% for tag in doc_data['doc_tags'] %}
-    <form action="" method="post"><button type="submit" value="{{tag}}" name="delete_tag">{{tag}}</button></form>
+    <form action="" method="post"><button class="btn btn-primary btn-sm btn-block" type="submit" value="{{tag}}" name="delete_tag">{{tag}}</button></form>
+    <br/>
     {% endfor %}
     <legend class="border-bottom mb-4">Available tags: </legend>
     {% for tag in doc_data['project_tags'] %}
-    <form action="" method="post"><button type="submit" value="{{tag}}" name="add_tag">{{tag}}</button></form>
+    <form action="" method="post"><button class="btn btn-secondary btn-sm btn-block" type="submit" value="{{tag}}" name="add_tag">{{tag}}</button></form>
+    <br/>
     {% endfor %}
     <form method="POST" action="">
         <fieldset class="form-group">
@@ -82,5 +92,6 @@
         </form>
 </div>
 
+</div>
 
 {% endblock content %}

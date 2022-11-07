@@ -1,4 +1,3 @@
-from add_dataset import add
 import app
 import models
 
@@ -14,11 +13,11 @@ for r in ['admin', 'instructor', 'student']:
 # app.db.session.add(r)
 app.db.session.commit()
 
-hp = app.bcrypt.generate_password_hash("DigitalmethodsF2021")
+hp = app.bcrypt.generate_password_hash("DigitalmethodsF2022")
 u = models.User(name='Arthur Hjorth Admin', admin=True, password=hp, email="arthur@mgmt.au.dk", roles= list(models.Role.query.filter_by(name='admin')))
 app.db.session.add(u)
 app.db.session.commit()
-hp = app.bcrypt.generate_password_hash("DigitalMethodsF2021")
+hp = app.bcrypt.generate_password_hash("DigitalMethodsF2022")
 u = models.User(name='Michela Beretta', admin=True, password=hp, email="micbe@mgmt.au.dk", roles= list(models.Role.query.filter_by(name='admin')))
 app.db.session.add(u)
 app.db.session.commit()
@@ -26,25 +25,23 @@ u = models.User(name='Arthur Hjorth student', password=hp, email="arthur@stx.oxo
 app.db.session.add(u)
 app.db.session.commit()
 
-add('input_data/Electronics_5.json', 'Electronics Reviews, 1.5M', 1500000)
-add('input_data/Electronics_5.json', 'Electronics Reviews, tiny', 20000)
 
 g = models.Group(name='admin group', users=[u])
 app.db.session.add(g)
 app.db.session.commit()
-for n in range(13):
-    student_group = models.Group(name='Group ' + str(n), users = [])
-    app.db.session.add(student_group)
-    app.db.session.commit()
-c = models.Collection.query.get(1)
-p = models.Project(name='Arthurs Demo Project', collections = [c], group_id = g.id)
-app.db.session.add(p)
-app.db.session.commit()
-print(p.id)
-c2 = models.Collection.query.get(2)
-p2 = models.Project(name='Arthurs Demo project 2 for students', collections = [c2], group_id = g2.id)
-app.db.session.add(p2)
-app.db.session.commit()
-print(p2.id)
+#for n in range(13):
+#    student_group = models.Group(name='Group ' + str(n) + "F2022", users = [])
+#    app.db.session.add(student_group)
+#    app.db.session.commit()
+#c = models.Collection.query.get(1)
+#p = models.Project(name='Arthurs Demo Project', collections = [c], group_id = g.id)
+#app.db.session.add(p)
+#app.db.session.commit()
+#print(p.id)
+#c2 = models.Collection.query.get(2)
+#p2 = models.Project(name='Arthurs Demo project 2 for students', collections = [c2], group_id = g2.id)
+#app.db.session.add(p2)
+#app.db.session.commit()
+#print(p2.id)
 
 ## import all documents here.

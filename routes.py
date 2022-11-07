@@ -15,6 +15,21 @@ def home():
     print(projects)
     return render_template('index.html', projects = projects)
 
+# @app.route('/create_collection_from_tags/<int:project_id>/', methods=['GET','POST'])
+@app.route('/test3')
+@login_required
+def create_collection_from_tags():
+    print("test")
+    args = request.args.to_dict()
+    if request.method == 'POST':
+        pass
+        #deal with creating a collection here
+    if request.method == 'GET':
+        all_tags = models.Collection.query.get(project_id).tags
+        print(all_tags)
+        return jsonify({})
+
+
 
 @app.route('/add_collection')
 @login_required
@@ -120,15 +135,12 @@ def filter_collection(collection, contains, excludes, page_start):
     filter_form = FilterForm()
     create_filtered_collection_form = CreateFilteredCollectionForm()
     if request.method == 'POST' and 'create_new_collection' in request.form.to_dict():
-        print("making new")
         redirect(url_for('filter_collection', contains = contains, excludes=excludes, page_start=page_start, collection=collection))
     if request.method == 'POST' and 'test_filter' in request.form.to_dict():
         words_to_include = [word.strip() for word in  filter_form.included_words.data.split(",")]
         words_to_exclude = [word.strip() for word in  filter_form.excluded_words.data.split(",")]
         words_to_include = ",".join(w for w in words_to_include)
         words_to_exclude = ",".join(w for w in words_to_exclude)
-        print(words_to_include)
-        print(words_to_exclude)
         # print(url_for('filter_collection'))
         # redirect(url_for('filter_coll'))
         # render_template('filter_collection2.html', contains = words_to_include, excludes=words_to_exclude, page_start=1, collection=collection)

@@ -28,11 +28,16 @@ class HistogramForm2(FlaskForm):
     submit_histogram = SubmitField("Create histogram")
 
 
+class AddCollectionForm(FlaskForm):
+    name = StringField('Name of collection', validators=[DataRequired()])
+    filename = SelectField('Pick the file', validators=[DataRequired()])
+    submit_new_collection = SubmitField("Create Collection")
+
 class AddProjectForm(FlaskForm):
-    title = StringField('Title', validators=[DataRequired()])
-    group = SelectField('Which student group should participate?', validators=[DataRequired()])
+    name = StringField('Title', validators=[DataRequired()])
+    group = SelectField('Which group will work on this?', validators=[DataRequired()])
     dataset = SelectField('Which dataset will the project work on?', validators=[DataRequired()])
-    submit = SubmitField("Create Project")
+    submit_new_project = SubmitField("Create Project")
 
 class LinearRegressionForm2(FlaskForm):
     x_heading = SelectField('Choose data for your X axis (Number data only)', validators=[DataRequired()])
@@ -89,7 +94,8 @@ class CreateTagForm(FlaskForm):
 
 class AddGroupForm(FlaskForm):
     name = StringField('Group Name', validators=[DataRequired()])
-    group = SelectField('Which group is this student', validators=[DataRequired()])
+    submit_new_group = SubmitField("add new group")
+
 
 class AddUserForm(FlaskForm):
     name = StringField('Title', validators=[DataRequired()])

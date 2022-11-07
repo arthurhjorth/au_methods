@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
 {% block content %}
 <h1>Overview of {{ project.name }} </h1>
-<div class="content-section col-md-12">
+
+<!-- <div class="content-section col-md-12">
     <h1>Analyses and Visualizations</h1>
 <div class="content-section col-md-12">
 <h2>Create new Analysis</h2>
@@ -20,15 +21,15 @@
 </div>
 
 </div>
-<div class="content-section col-md-12">
-    <h2>Finished analyses and Visualizations</h2>
+<div class="content-section col-md-12"> -->
+    <!-- <h2>Finished analyses and Visualizations</h2>
     {% for a in project.analyses %}
 <div class="content-section col-md-12">
     <p><b>Name of Analysis: </b><a href={{ url_for('view_analysis', analysis_id=a.id, page_start=1) }} >{{a.name}}</a></p>
     </div>
     {% endfor %}
 </div>
-</div>
+</div> -->
 <div class="content-section col-md-12">
 <a href={{ url_for('project', project_id = project.id)  }}?view=1 >View hidden Collections</a>
 <a href={{ url_for('project', project_id = project.id)  }}> View only shown Collections</a>
@@ -48,7 +49,7 @@
         <p><b>Filters:</b> {{ c.filters }} </p>
         <p><b>Analyses:</b> {{ c.analysis_results }} </p>
         <p><a href={{ url_for('try_filters2', collection=c.collection_id) }} >Add filters</a></p>
-        <p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p>
+        <!-- <p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p> -->
         </div>
     {% endif %}
 {% endfor %}

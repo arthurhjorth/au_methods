@@ -6,7 +6,7 @@ import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 from sqlalchemy.sql.expression import or_
 from flask_sqlalchemy import SQLAlchemy
-from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2, LinearRegressionForm, LinearRegressionForm2, TTestForm, TTestForm2, HistogramForm2
+from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2, LinearRegressionForm, LinearRegressionForm2, TTestForm, TTestForm2, HistogramForm2, AddGroupForm, AddProjectForm, AddCollectionForm
 from flask_login import login_user, current_user, logout_user, login_required, LoginManager
 from sqlalchemy import not_, and_
 from flask_bcrypt import Bcrypt
@@ -49,16 +49,45 @@ def home():
     return render_template('index.html', projects = projects)
 
 
-@app.route('/add_collection')
+
+@app.route('/add_project', methods=['GET', 'POST'])
+@login_required
+def add_project():
+    form = AddProjectForm()
+    form.group.choices = [( str(g.id), g.name ) for g in models.Group.query.all()]
+    form.dataset.choices = [( str(c.id), c.name ) for c in models.Collection.query.all()]
+    if form.validate_on_submit():
+        project_name = form.name.data
+        group_id = form.group.data
+        collection = models.Collection.query.get(int(form.dataset.data))
+        project = models.Project(name=project_name, collections = [collection], group_id=group_id)
+        db.session.add(project)
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('add_project.html', form=form)
+
+@app.route('/add_collection', methods=['GET', 'POST'])
 @login_required
 def add_collection():
-    return jsonify({})
+    files = [f for f in os.listdir("input_data/") if '.json' in f or '.csv' in f]
+    form = AddCollectionForm()
+    form.filename.choices = [( f, f) for f in files]
+    if form.validate_on_submit():
+        add_collection_by_filename("input_data/"+form.filename.data, form.name.data)
+        return redirect(url_for('home'))
+    return render_template('add_collection.html', form=form)
 
-@app.route('/add_group')
+@app.route('/add_group', methods=['GET', 'POST'])
 @login_required
 def add_group():
     form = AddGroupForm()
-    return render_template('add_group.html')
+    if form.validate_on_submit():
+        group_name = form.name.data
+        g = models.Group(name=group_name, users=[])
+        db.session.add(g)
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('add_group.html', form=form)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
@@ -194,7 +223,7 @@ def try_filters2(collection):
 
     filter_form = FilterForm2()
     filter_form.field_name.choices = [( str(fieldname), str(fieldname) ) for fieldname in c.headings]
-    operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals']#, 'document has this field', 'document does not have this field']
+    operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals', 'is tagged as', 'is not tagged as']#, 'document has this field', 'document does not have this field']
     # operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals', 'document has this field', 'document does not have this field']
     filter_form.operator.choices = [( str(op), str(op) ) for op in operations]
     # print(request.form.to_dict())
@@ -223,6 +252,20 @@ def try_filters2(collection):
                 for f in filterdata:
                     operator = f[0]
                     operand = f[1]
+# #### start here
+### i dont understand why but this takes an insane amount of time. Let's just special case this
+### around line 308
+#                     if operator == 'is tagged as':
+#                         if "," in operand:
+#                             or_tags = operand.split(",")
+#                             or_tags = [w.strip() for w in or_tags]
+#                             tags = app.models.Tag.query.filter(app.models.Tag.text.in_(or_tags)).all()
+#                             query_filters = [models.Document.doc_tags.contains(tag) for tag in tags]
+#                             query.filter(or_(*query_filters))
+#                         # else:
+#                         #     tag = 
+#                         #     query = query.filter(
+#####
                     if operator == 'contains text':
                         ## we want to be able to do OR
                         if "," in operand:
@@ -236,7 +279,7 @@ def try_filters2(collection):
                         query = query.filter(not_(models.Document.data[field_name].contains(operand)))
             ## because casting to int doesnt work, ,we do these by creating a list and just filtring through each of them.
             new_collection_docs = []
-            for d in query.all():
+            for d in query:
                 doc_data = d.data
                 include_doc = True
                 for field_name, filterdata in c.filters.items():
@@ -665,7 +708,10 @@ def project(project_id):
             return redirect(url_for('project', project_id = project_id, view='1'))
     return render_template('project.html', project=p, collections_data=collections_data, view=view)
 
-
+app.route("/add_group", methods=['GET', 'POST'])
+def add_group():
+    form = AddGroupForm()
+    return render_template('add_group.html', form=form)
 
 app.route("/login", methods=['GET', 'POST'])
 @login_required
@@ -857,14 +903,18 @@ def add_lix_rating(collection, fieldname):
         if fieldname in d.data:
             count = count + 1
             text = str(d.data[fieldname])
-            words = text.split()
-            text.replace("...", ".")
-            text.replace("!", ".")
-            text.replace("?", ".")
+            words = [w for w in text.split() if 'http' not in w and '@' not in w]
+            text = " ".join([w for w in words])
+            text = text.replace("...", ".")
+            text = text.replace("!", ".")
+            text = text.replace("?", ".")
+            text = text.replace(":", " ")
             sentence_count = len(text.split("."))
-            word_count = len(str(d.data[fieldname]).split())
+            word_count = len(words)
             words_longer_than_6 = len([word for word in words if len(word) > 6])
-            lix_score = (word_count / sentence_count) + (words_longer_than_6 * 100 / word_count)
+            lix_score = (word_count / sentence_count)
+            if words_longer_than_6 > 0:
+                lix_score = lix_score + words_longer_than_6 * 100 / word_count
             lix_scores.append(lix_score)
             d.data.update({dict_heading : lix_score})
             flag_modified(d, 'data')
@@ -889,4 +939,50 @@ def add_lix_rating(collection, fieldname):
     db.session.commit() 
 
 
+def add_json_file_to_collection(filename, collection_id):
+    with open(filename) as inf:
+        counter = 0 # counter for commiting
+        coll = models.Collection.query.get(collection_id)
+        headings = set(coll.headings)
+        for line in inf.readlines():
+            counter = counter + 1
+            d = json.loads(line)
+            for key in d:
+                headings.add(key)
+            new_doc = models.Document(data=d, collection_id = collection_id)
+            db.session.add(new_doc)
+            coll.documents.append(new_doc)
+            if counter % 10000 == 0:
+                db.session.commit()
+                print(counter)
+        coll.headings = sorted(list(headings))
+        db.session.commit()
+        coll.doc_count = coll.documents.count()
+        db.session.add(coll)
+        db.session.commit()
 
+
+def add_collection_by_filename(filename, collection_name, first_n=999999999999999999999):
+    with open(filename) as inf:
+        new_coll = models.Collection(name=collection_name)
+        db.session.add(new_coll)
+        db.session.commit()
+        print(new_coll.id)
+        counter = 0
+        headings = set()
+        for line in inf.readlines()[:first_n]:
+            counter = counter + 1
+            d = json.loads(line)
+            for key in d:
+                headings.add(key)
+            new_doc = models.Document(data=d, collection_id=new_coll.id)
+            db.session.add(new_doc)
+            new_coll.documents.append(new_doc)
+            if counter % 10000 == 0:
+                db.session.commit()
+                print(counter)
+        new_coll.headings = sorted(list(headings))
+        db.session.commit()
+        new_coll.doc_count = new_coll.documents.count()
+        db.session.add(coll)
+        db.session.commit()
