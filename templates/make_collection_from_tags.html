@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<td><a href='{{ url_for(' project', project_id=project_id) }}'>
+        << Back to Project Overview</a>
+</td>
+
+<div class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+
+
+            <legend class="border-bottom mb-4">Available Tags</legend>
+            {% for tag in tags %}
+            <button class="btn btn-primary btn-sm btn-block" onclick="addTag({tag})"
+                    value="{{tag}}" name="add_tag">{{tag}}</button>
+                <br />
+                {% endfor %}
+                <legend class="border-bottom mb-4">Available tags: </legend>
+                {% for tag in doc_data['project_tags'] %}
+                <form action="" method="post"><button class="btn btn-secondary btn-sm btn-block" type="submit"
+                        value="{{tag}}" name="add_tag">{{tag}}</button></form>
+                <br />
+                {% endfor %}
+        </div>
+
+    </div>
+
+    {% endblock content %}
+    <script>
+        function addTag(name) {
+            console.log(name);
+        }
+
+    </script>
