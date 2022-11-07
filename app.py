@@ -179,7 +179,7 @@ def view_document2(project_id, doc_id):
 @login_required
 def apply_function(collection):
     project_id = 0
-    function_form = ApplyFunctionForm() 
+    function_form = ApplyFunctionForm()
     function_options = ["Word Count", "Sentence Count", "Reading difficulty (Lix)", "Total Sentiment", "Negative Sentiment", "Positive Sentiment"]
     function_form.function.choices = [(str(func), str(func)) for func in function_options]
     c = models.Collection.query.get(collection)
@@ -238,7 +238,7 @@ def try_filters2(collection):
             field_filter = filters_dict.get(post_dict['field_name'], [])
             field_filter.append([post_dict['operator'], post_dict['filter_data']])
             filters_dict[post_dict['field_name']] = field_filter
-            flag_modified(c, "filters") 
+            flag_modified(c, "filters")
             db.session.add(c)
             db.session.merge(c)
             db.session.flush()
@@ -263,7 +263,7 @@ def try_filters2(collection):
 #                             query_filters = [models.Document.doc_tags.contains(tag) for tag in tags]
 #                             query.filter(or_(*query_filters))
 #                         # else:
-#                         #     tag = 
+#                         #     tag =
 #                         #     query = query.filter(
 #####
                     if operator == 'contains text':
@@ -288,7 +288,7 @@ def try_filters2(collection):
                     if include_doc:
                         for f in filterdata:
                             operator = f[0]
-                            ## we only want key value pairs that relate to mathematical operations here. 
+                            ## we only want key value pairs that relate to mathematical operations here.
                             if operator in ['greater than', 'less than', 'equals']:
                                 operand = float(f[1])
                                 field_value = doc_data[field_name]
@@ -313,12 +313,12 @@ def try_filters2(collection):
                 else:
                     c.filters[k] = v
             c.headings = parent_collection.headings
-            flag_modified(c, "headings") 
+            flag_modified(c, "headings")
             # get name from form
             c.name = post_dict['name_of_new_collection']
             if c.name == "":
                 c.name == "Unnamed"
-            flag_modified(c, "filters") 
+            flag_modified(c, "filters")
             db.session.add(c)
             db.session.merge(c)
             db.session.flush()
@@ -326,7 +326,7 @@ def try_filters2(collection):
             return redirect(url_for('view_collection', collection=c.id, page_start = 1))
 
 
-    # {'image': [['document has this field', '']], 'reviewText': [['contains', 'iphone'], ['contains', 'screen'], ['contains text', 'samsung']], 
+    # {'image': [['document has this field', '']], 'reviewText': [['contains', 'iphone'], ['contains', 'screen'], ['contains text', 'samsung']],
     # 'overall': [['equals', '5']], 'asin': [['document has this field', ''], ['contains text', ''], ['contains text', ''], ['contains text', '']], 'summary': [['contains text', 'great']]}
 
     # c = models.Collection.query.get(collection)
@@ -488,12 +488,12 @@ def t_test2(collection1, collection2):
 
         return redirect(url_for('project', project_id=coll1.project_id))
     ttest_form2 = TTestForm2()
-    ttest_form2.data1.choices = [(str(h), str(h)) for h in coll1.headings] 
-    ttest_form2.data2.choices = [(str(h), str(h)) for h in coll2.headings] 
+    ttest_form2.data1.choices = [(str(h), str(h)) for h in coll1.headings]
+    ttest_form2.data2.choices = [(str(h), str(h)) for h in coll2.headings]
     return render_template('ttest2.html', ttest_form2=ttest_form2, c1name = coll1.name, c2name = coll2.name)
     ttest_form_form2 = TTestForm2()
-    ttest_form_form2.data1.choices = [(str(h), str(h)) for h in coll1.headings] 
-    ttest_form_form2.data2.choices = [(str(h), str(h)) for h in coll2.headings] 
+    ttest_form_form2.data1.choices = [(str(h), str(h)) for h in coll1.headings]
+    ttest_form_form2.data2.choices = [(str(h), str(h)) for h in coll2.headings]
     return render_template('ttest2.html', ttest_form2=ttest_form_form2)
 
 
@@ -506,7 +506,7 @@ def histogram(project):
     p = models.Project.query.get(project)
     linear_regression_form = LinearRegressionForm()
     colls = [p for p in p.collections if not p.hidden]
-    linear_regression_form.collection.choices = [(c.id, c.name) for c in colls] 
+    linear_regression_form.collection.choices = [(c.id, c.name) for c in colls]
     return render_template('histogram.html', linear_regression_form=linear_regression_form)
 
 @app.route('/histogram2/<int:collection>', methods=["POST", "GET"])
@@ -540,13 +540,13 @@ def histogram2(collection):
         data['STD of value'] = stats.tstd(in_data)
         data['reflections'] = rq_form['reflections']
         new_analysis.data = data
-    
+
         db.session.add(new_analysis)
         db.session.commit()
         return redirect(url_for('project', project_id=coll.project_id))
 
     histogram_form2 = HistogramForm2()
-    histogram_form2.data.choices = [(str(h), str(h)) for h in coll.headings] 
+    histogram_form2.data.choices = [(str(h), str(h)) for h in coll.headings]
     return render_template('histogram2.html', histogram_form2=histogram_form2)
 
 @app.route('/linear_regression1/<int:project>', methods=["post", "get"])
@@ -559,7 +559,7 @@ def linear_regression(project):
     p = models.Project.query.get(project)
     linear_regression_form = LinearRegressionForm()
     colls = [p for p in p.collections if not p.hidden]
-    linear_regression_form.collection.choices = [(c.id, c.name) for c in colls] 
+    linear_regression_form.collection.choices = [(c.id, c.name) for c in colls]
     return render_template('linear_regression1.html', linear_regression_form=linear_regression_form)
 
 def data_to_float(astr):
@@ -644,14 +644,14 @@ def linear_regression2(collection):
         new_analysis.group_id = current_user.group_id
         new_analysis.project_id = coll.project_id
         new_analysis.data = data
-    
+
         db.session.add(new_analysis)
         db.session.commit()
 
         return redirect(url_for('project', project_id=coll.project_id))
     linear_regression_form2 = LinearRegressionForm2()
-    linear_regression_form2.x_heading.choices = [(str(h), str(h)) for h in coll.headings] 
-    linear_regression_form2.y_heading.choices = [(str(h), str(h)) for h in coll.headings] 
+    linear_regression_form2.x_heading.choices = [(str(h), str(h)) for h in coll.headings]
+    linear_regression_form2.y_heading.choices = [(str(h), str(h)) for h in coll.headings]
     return render_template('linear_regression2.html', linear_regression_form=linear_regression_form2)
 
 
@@ -680,7 +680,7 @@ def view_collection(collection, page_start):
     doc_ids = [d.id for d in c.documents.paginate(page_start, 25).items]
     for n, doc in enumerate(docs):
         doc['id'] = doc_ids[n]
-        
+
     collections_data = [{'collection_id' : c.id, 'entries' : c.doc_count, 'collection_name' : c.name} for c in p.collections]
     headings = sorted(list(set([key for doc in docs for key in doc.keys()])))
     return render_template('view_collection.html', table = docs, current_page = page_start, table_name = 'documents', headings=headings, project_id=p.id, collection=c.id)
@@ -760,7 +760,7 @@ def user_projects():
     # print(current_user.admin)
     if current_user.admin:
         return models.Project.query.all()
-    
+
     # print(current_user.email)
     # print(current_user.group_id)
     user_group = models.Group.query.get(current_user.group_id)
@@ -807,7 +807,7 @@ def add_sentiment_analysis(collection, fieldname, positive = True, negative = Tr
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
     standard_deviation = np.std(scores)
     average = np.mean(scores)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
@@ -815,11 +815,11 @@ def add_sentiment_analysis(collection, fieldname, positive = True, negative = Tr
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
 
 
 
-                
+
 def add_sentence_count(collection, fieldname):
     dict_heading = 'sentence_count_'+fieldname
     average = 0
@@ -847,7 +847,7 @@ def add_sentence_count(collection, fieldname):
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
     standard_deviation = np.std(sentence_counts)
     average = np.mean(sentence_counts)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
@@ -855,7 +855,7 @@ def add_sentence_count(collection, fieldname):
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
 
 
 
@@ -882,7 +882,7 @@ def add_word_count(collection, fieldname):
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
     standard_deviation = np.std(word_counts)
     average = np.mean(word_counts)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
@@ -890,7 +890,7 @@ def add_word_count(collection, fieldname):
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
 
 
 def add_lix_rating(collection, fieldname):
@@ -928,7 +928,7 @@ def add_lix_rating(collection, fieldname):
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
     standard_deviation = np.std(lix_scores)
     average = np.mean(lix_scores)
     collection.analysis_results[dict_heading] = {'average' : average, 'standard deviation' : standard_deviation}
@@ -936,7 +936,7 @@ def add_lix_rating(collection, fieldname):
     db.session.add(collection)
     db.session.merge(collection)
     db.session.flush()
-    db.session.commit() 
+    db.session.commit()
 
 
 def add_json_file_to_collection(filename, collection_id):
@@ -984,5 +984,5 @@ def add_collection_by_filename(filename, collection_name, first_n=99999999999999
         new_coll.headings = sorted(list(headings))
         db.session.commit()
         new_coll.doc_count = new_coll.documents.count()
-        db.session.add(coll)
+        db.session.add(new_coll)
         db.session.commit()
