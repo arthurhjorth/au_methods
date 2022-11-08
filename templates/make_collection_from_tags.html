@@ -1,36 +1,110 @@
 {% extends "layout.html" %}
 {% block content %}
 
-
-<td><a href='{{ url_for(' project', project_id=project_id) }}'>
-        << Back to Project Overview</a>
-</td>
+<h1>Create Collection from Tags</h1>
+<p>You must include at least one tag. You can include as many as you want above that.</p>
+<p>You can also include one or several tags that you want to exclude from the collection.</p>
 
 <div class="content-section">
     <div class="container">
         <div class="row justify-content-center">
-
-
-            <legend class="border-bottom mb-4">Available Tags</legend>
-            {% for tag in tags %}
-            <button class="btn btn-primary btn-sm btn-block" onclick="addTag({tag})"
-                    value="{{tag}}" name="add_tag">{{tag}}</button>
-                <br />
-                {% endfor %}
-                <legend class="border-bottom mb-4">Available tags: </legend>
-                {% for tag in doc_data['project_tags'] %}
-                <form action="" method="post"><button class="btn btn-secondary btn-sm btn-block" type="submit"
-                        value="{{tag}}" name="add_tag">{{tag}}</button></form>
-                <br />
-                {% endfor %}
-        </div>
-
+    <div class="col">
+            <legend class="border-bottom mb-4">Must be tagged as (x OR y OR z, if more)</legend>
+        {% for tag in all_tags %}
+        {% if tag.id in included_tags %}
+            <p><button type="button" class="btn btn-success" onclick="removeIncluded({{tag.id}})">{{tag.text}}</button></p>
+        {% else %}
+            <p><button type="button" class="btn btn-secondary" onclick="addIncluded({{tag.id}})">{{tag.text}}</button></p>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="col">
+            <legend class="border-bottom mb-4">Must NOT be tagged as (x ANd y AND z, if more)</legend>
+        {% for tag in all_tags %}
+        {% if tag.id in excluded_tags %}
+            <p><button type="button" class="btn btn-danger" onclick="removeExcluded({{tag.id}})">{{tag.text}}</button></p>
+        {% else %}
+            <p><button type="button" class="btn btn-secondary" onclick="addExcluded({{tag.id}})">{{tag.text}}</button></p>
+        {% endif %}
+        {% endfor %}
     </div>
 
-    {% endblock content %}
-    <script>
-        function addTag(name) {
-            console.log(name);
-        }
+    </div>
+</div>
 
-    </script>
+{% if included_tags|length > 0 %}
+<p><strong>Tagged</strong> as: 
+    {% for t in all_tags %}
+    {% if t.id in included_tags %}
+    {{t.text}}   
+    {% endif %}
+    {% endfor %}
+{% endif %}
+
+{% if excluded_tags|length > 0 %}
+<p><strong>Not</strong> tagged as: 
+    {% for t in all_tags %}
+    {% if t.id in excluded_tags %}
+    {{t.text}}  
+    {% endif %}
+    {% endfor %}
+{% endif %}
+
+
+<br>
+<br>
+<legend class="border-bottom mb-4">Create a collection of documents in that are</legend>
+<form method="POST">
+
+    <div class="form-group">
+        <input class="form-control" name="name" type="text" placeholder="Name of new Collection">
+    </div>
+    <br>
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+</form>
+
+<script>
+function addExcluded(tid){
+    inc = {{included_tags}};
+    exc = {{excluded_tags}};
+    if (inc.includes(tid)){
+        inc.splice(inc.indexOf(tid), 1);
+    }
+    exc.push(tid);
+    project_id = {{project_id}};
+    location.href = `/add_collection_from_tags/${project_id}?included=${inc}&excluded=${exc}`;
+}
+function removeExcluded(tid){
+    inc = {{included_tags}};
+    exc = {{excluded_tags}};
+    if (exc.includes(tid)){
+        exc.splice(exc.indexOf(tid), 1);
+    }
+    project_id = {{project_id}};
+    location.href = `/add_collection_from_tags/${project_id}?included=${inc}&excluded=${exc}`;
+}
+function addIncluded(tid){
+    inc = {{included_tags}};
+    exc = {{excluded_tags}};
+    inc.push(tid);
+    if (exc.includes(tid)){
+        exc.splice(exc.indexOf(tid), 1);
+    }
+    console.log(inc);
+    project_id = {{project_id}};
+    location.href = `/add_collection_from_tags/${project_id}?included=${inc}&excluded=${exc}`;
+}
+function removeIncluded(tid){
+    inc = {{included_tags}};
+    exc = {{excluded_tags}};
+    if (inc.includes(tid)){
+        inc.splice(inc.indexOf(tid), 1);
+    }
+    project_id = {{project_id}};
+    location.href = `/add_collection_from_tags/${project_id}?included=${inc}&excluded=${exc}`;
+}
+</script>
+
+
+{% endblock content %}

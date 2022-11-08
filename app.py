@@ -201,6 +201,51 @@ def apply_function(collection):
         return redirect(url_for('view_collection', collection=c.id, page_start=1))
     return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id, collection=c)
 
+@app.route('/add_collection_from_tags/<int:p>/', methods=['POST','GET'])
+@login_required
+def add_collection_from_tags(p):
+    project = models.Project.query.get(p)
+    args = request.args.to_dict()
+
+    included_tag_ids = [t for t in args.get('included', '').split(",")] if args.get('included', '') != '' else []
+    excluded_tag_ids = [t for t in args.get('excluded', '').split(",")] if args.get('excluded', '') != '' else []
+    included_tags = [models.Tag.query.get(t) for t in included_tag_ids]
+    excluded_tags = [models.Tag.query.get(t) for t in excluded_tag_ids]
+    inc_tags = [t.id for t in included_tags]
+    exc_tags = [t.id for t in excluded_tags]
+    print(args)
+    if request.method == "POST":
+        form = request.form.to_dict()
+        print(form)
+        docs = []
+        headings = set()
+        for t in included_tags:
+            for d in t.tag_docs:
+                docs.append(d)
+                for k in d.data:
+                    headings.add(k)
+        for t in excluded_tags:
+            for d in t.tag_docs:
+                if d in docs:
+                    docs.remove(d)
+        headings = sorted(list(headings))
+        new_collection = models.Collection(name=form['name'],parent_filters={}, project_id = p, headings=headings)
+        for d in docs:
+            new_collection.documents.append(d)
+        new_collection.doc_count = new_collection.documents.count()
+        db.session.add(new_collection)
+        db.session.commit()
+        return redirect(url_for('project', project_id=p))
+        ## move to project id
+
+        # implemnet change
+    if request.method == "GET":
+        # available_tags = [tag for tag in project.tags if tag not in included_tags and tag not in excluded_tags]
+        print(inc_tags, exc_tags)
+        return render_template('make_collection_from_tags.html', all_tags=project.tags, included_tags=inc_tags, excluded_tags=exc_tags, project_id=project.id)
+        
+    return jsonify({})
+    
 
 
 @app.route('/try_filters2/<int:collection>', methods=["POST", "GET"])

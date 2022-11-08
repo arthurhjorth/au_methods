@@ -55,6 +55,8 @@
 {% endfor %}
 </div>
 <div class="content-section col-md-12">
+<h1>Tags</h1>
+<p><strong><a href={{ url_for('add_collection_from_tags', p=project.id)}} >Create a Collection from Tags</a></strong></p>
 <p><b>View by tag:</b></p>
 {% for tag in project.tags %}
 <div class="content-section col-md-12">
