@@ -213,10 +213,8 @@ def add_collection_from_tags(p):
     excluded_tags = [models.Tag.query.get(t) for t in excluded_tag_ids]
     inc_tags = [t.id for t in included_tags]
     exc_tags = [t.id for t in excluded_tags]
-    print(args)
     if request.method == "POST":
         form = request.form.to_dict()
-        print(form)
         docs = []
         headings = set()
         for t in included_tags:
@@ -224,17 +222,41 @@ def add_collection_from_tags(p):
                 docs.append(d)
                 for k in d.data:
                     headings.add(k)
+        if form['inc-operator'][:2] == "AN":
+            docs_to_remove = set()
+            for d in docs:
+                for t in included_tags:
+                    if d not in t.tag_docs:
+                        docs_to_remove.add(d)
+            print(len(docs_to_remove))
+            # docs = [d for d in docs if all([d in t.tag_docs for t in t in included_tags])]
+            docs = [d for d in docs if d not in docs_to_remove]
         for t in excluded_tags:
-            for d in t.tag_docs:
-                if d in docs:
-                    docs.remove(d)
+            if form['exc-operator'][:2] == "OR":
+                for d in t.tag_docs:
+                    if d in docs:
+                        docs.remove(d)
+            if form['exc-operator'][:2] == "AN":
+                docs_to_remove = set()
+                for d in docs:
+                    for t in excluded_tags:
+                        if d not in t.tag_docs:
+                            docs_to_remove.add(d)
+                print(docs_to_remove)
+                docs = [d for d in docs if d not in docs_to_remove]
+        docs = set(docs)
+        print(docs)
         headings = sorted(list(headings))
+        if form['name'] == "":
+            name = form['inc-operator'][:3] + " included: " + args.get('included', '') + " | " + form['exc-operator'][:3] + " excluded: " + args.get('excluded','')
+            print(name)
         new_collection = models.Collection(name=form['name'],parent_filters={}, project_id = p, headings=headings)
-        for d in docs:
-            new_collection.documents.append(d)
-        new_collection.doc_count = new_collection.documents.count()
-        db.session.add(new_collection)
-        db.session.commit()
+        if len(docs) > 0:
+            for d in docs:
+                new_collection.documents.append(d)
+            new_collection.doc_count = new_collection.documents.count()
+            db.session.add(new_collection)
+            db.session.commit()
         return redirect(url_for('project', project_id=p))
         ## move to project id
 

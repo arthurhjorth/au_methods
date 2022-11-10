@@ -32,6 +32,10 @@
     </div>
 </div>
 
+
+<br>
+<br>
+<legend class="border-bottom mb-4">Create a collection of documents in that are</legend>
 {% if included_tags|length > 0 %}
 <p><strong>Tagged</strong> as: 
     {% for t in all_tags %}
@@ -50,13 +54,24 @@
     {% endfor %}
 {% endif %}
 
-
-<br>
-<br>
-<legend class="border-bottom mb-4">Create a collection of documents in that are</legend>
 <form method="POST">
 
     <div class="form-group">
+        <label>Select operator for <strong>included</strong> tags:</label>
+        <select name="inc-operator" class="form-control" >
+            <option>OR  (include if it contains any of these tags)</option>
+            <option>AND (include if it contains all of them)</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Select operator for <strong>excluded</strong> tags:</label>
+        <select name="exc-operator" class="form-control" >
+            <option>OR  (exclude if it contains any of these tags)</option>
+            <option>AND (exclude if it contain sall of them)</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Give your new collection a name:</label>
         <input class="form-control" name="name" type="text" placeholder="Name of new Collection">
     </div>
     <br>
