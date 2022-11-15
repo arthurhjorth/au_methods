@@ -41,6 +41,13 @@ class Analysis(app.db.Model):
     data = app.db.Column(JSON, default={})
     reflections = app.db.Column(app.db.String(2000))
 
+class Folder(app.db.Model):
+    __tablename__ = 'folder'
+    id = app.db.Column(app.db.Integer, primary_key=True)
+    name = app.db.Column(app.db.String(25))
+    collections = app.db.relationship('Collection')
+    project_id = app.db.Column(app.db.Integer, app.db.ForeignKey('project.id'))
+
 class Project(app.db.Model):
     __tablename__ = 'project'
     id = app.db.Column(app.db.Integer, primary_key=True)
@@ -78,6 +85,7 @@ class Document(app.db.Model):
     doc_tags = app.db.relationship('Tag', secondary=document_tags, lazy='subquery',
         backref=app.db.backref('tag_docs', lazy='dynamic'))
     doc_comments = app.db.relationship('Comment')
+    folder_id = app.db.Column(app.db.Integer, app.db.ForeignKey('folder.id'), default=0)
 
 class Tag(app.db.Model):
     __tablename__ = 'tag'
