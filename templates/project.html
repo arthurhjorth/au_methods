@@ -49,7 +49,9 @@
         <p><b>Filters:</b> {{ c.filters }} </p>
         <p><b>Analyses:</b> {{ c.analysis_results }} </p>
         <p><a href={{ url_for('try_filters2', collection=c.collection_id) }} >Add filters</a></p>
-        <!-- <p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p> -->
+        {% if show_desc %}
+        <p><a href={{ url_for('apply_function', collection=c.collection_id) }} >Apply function</a></p>
+        {% endif %}
         </div>
     {% endif %}
 {% endfor %}

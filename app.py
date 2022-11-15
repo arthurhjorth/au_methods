@@ -752,11 +752,31 @@ def view_collection(collection, page_start):
     headings = sorted(list(set([key for doc in docs for key in doc.keys()])))
     return render_template('view_collection.html', table = docs, current_page = page_start, table_name = 'documents', headings=headings, project_id=p.id, collection=c.id)
 
+@app.route('/view_groups')
+def view_groups():
+    if current_user.admin: 
+        group_data = {}
+        for g in models.Group.query:
+            group_data[g.id] = {}
+            group_data[g.id]['name'] = g.name
+            for u in g.users:
+                group_data[g.id][u.id] = u.name
+        print(group_data)
+        return jsonify(group_data)
+    return jsonify({})
+
+
+
 @app.route('/project/<int:project_id>', methods=['POST', 'GET'])
 @login_required
 def project(project_id):
     view = request.args.to_dict().get('view', 0)
     p = models.Project.query.get(project_id)
+    group = p.group_id
+    show_desc = False
+    if group in [3] or current_user.admin: ## this will show add descriptive statistics
+        show_desc = True
+
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
     if request.method == 'POST':
         if 'hide-collection' in request.form.to_dict():
@@ -773,7 +793,7 @@ def project(project_id):
             db.session.add(col)
             db.session.commit()
             return redirect(url_for('project', project_id = project_id, view='1'))
-    return render_template('project.html', project=p, collections_data=collections_data, view=view)
+    return render_template('project.html', project=p, collections_data=collections_data, view=view, show_desc=show_desc)
 
 app.route("/add_group", methods=['GET', 'POST'])
 def add_group():
