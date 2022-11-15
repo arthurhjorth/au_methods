@@ -774,7 +774,7 @@ def project(project_id):
     p = models.Project.query.get(project_id)
     group = p.group_id
     show_desc = False
-    if group in [2,3] or current_user.admin: ## this will show add descriptive statistics
+    if group in [3] or current_user.admin: ## this will show add descriptive statistics
         show_desc = True
 
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
