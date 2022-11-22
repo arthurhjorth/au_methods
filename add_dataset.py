@@ -24,7 +24,7 @@ db.session.commit()
 
 
 
-def add(filename, collection_name, first_n=999999999999999999999):
+def add_collection(filename, collection_name, first_n=999999999999999999999):
     with open(filename) as inf:
         new_coll = Collection(name=collection_name)
         db.session.add(new_coll)

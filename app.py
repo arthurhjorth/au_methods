@@ -16,6 +16,7 @@ from flask_migrate import Migrate
 from sklearn import datasets, linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 from scipy import stats
+import re
 
 secrets = json.loads(open('secrets.json').read())
 
@@ -228,7 +229,7 @@ def add_collection_from_tags(p):
                 for t in included_tags:
                     if d not in t.tag_docs:
                         docs_to_remove.add(d)
-            print(len(docs_to_remove))
+            # print(len(docs_to_remove))
             # docs = [d for d in docs if all([d in t.tag_docs for t in t in included_tags])]
             docs = [d for d in docs if d not in docs_to_remove]
         for t in excluded_tags:
@@ -242,14 +243,14 @@ def add_collection_from_tags(p):
                     for t in excluded_tags:
                         if d not in t.tag_docs:
                             docs_to_remove.add(d)
-                print(docs_to_remove)
+                # print(docs_to_remove)
                 docs = [d for d in docs if d not in docs_to_remove]
         docs = set(docs)
-        print(docs)
+        # print(docs)
         headings = sorted(list(headings))
         if form['name'] == "":
             name = form['inc-operator'][:3] + " included: " + args.get('included', '') + " | " + form['exc-operator'][:3] + " excluded: " + args.get('excluded','')
-            print(name)
+            # print(name)
         new_collection = models.Collection(name=form['name'],parent_filters={}, project_id = p, headings=headings)
         if len(docs) > 0:
             for d in docs:
@@ -263,7 +264,7 @@ def add_collection_from_tags(p):
         # implemnet change
     if request.method == "GET":
         # available_tags = [tag for tag in project.tags if tag not in included_tags and tag not in excluded_tags]
-        print(inc_tags, exc_tags)
+        # print(inc_tags, exc_tags)
         return render_template('make_collection_from_tags.html', all_tags=project.tags, included_tags=inc_tags, excluded_tags=exc_tags, project_id=project.id)
         
     return jsonify({})
@@ -290,7 +291,7 @@ def try_filters2(collection):
 
     filter_form = FilterForm2()
     filter_form.field_name.choices = [( str(fieldname), str(fieldname) ) for fieldname in c.headings]
-    operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals', 'is tagged as', 'is not tagged as']#, 'document has this field', 'document does not have this field']
+    operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals', 'contains any of these individual words', 'does not contain any of these individual words']#, 'document has this field', 'document does not have this field']
     # operations = ['contains text', 'does not contain text', 'greater than', 'less than', 'equals', 'document has this field', 'document does not have this field']
     filter_form.operator.choices = [( str(op), str(op) ) for op in operations]
     # print(request.form.to_dict())
@@ -319,20 +320,6 @@ def try_filters2(collection):
                 for f in filterdata:
                     operator = f[0]
                     operand = f[1]
-# #### start here
-### i dont understand why but this takes an insane amount of time. Let's just special case this
-### around line 308
-#                     if operator == 'is tagged as':
-#                         if "," in operand:
-#                             or_tags = operand.split(",")
-#                             or_tags = [w.strip() for w in or_tags]
-#                             tags = app.models.Tag.query.filter(app.models.Tag.text.in_(or_tags)).all()
-#                             query_filters = [models.Document.doc_tags.contains(tag) for tag in tags]
-#                             query.filter(or_(*query_filters))
-#                         # else:
-#                         #     tag =
-#                         #     query = query.filter(
-#####
                     if operator == 'contains text':
                         ## we want to be able to do OR
                         if "," in operand:
@@ -356,6 +343,13 @@ def try_filters2(collection):
                         for f in filterdata:
                             operator = f[0]
                             ## we only want key value pairs that relate to mathematical operations here.
+                            if operator in ['does not contain any of these individual words', 'contains any of these individual words']:
+                                operand = f[1]
+                                field_value = doc_data[field_name]
+                                if operator == 'does not contain any of these individual words' and any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
+                                    include_doc = False
+                                if operator == 'contains any of these individual words' and not any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
+                                    include_doc = False
                             if operator in ['greater than', 'less than', 'equals']:
                                 operand = float(f[1])
                                 field_value = doc_data[field_name]
@@ -371,8 +365,16 @@ def try_filters2(collection):
                                     include_doc = False
                 if include_doc:
                     # print(operand, field_value, d.id, len(new_collection_docs))
-                    new_collection_docs.append(d)
-            c.documents = new_collection_docs
+                    new_collection_docs.append(d.id)
+            # c.documents = models.Document.query(models.Document.id.in_(new_collection_docs))
+            for n, d in enumerate(new_collection_docs):
+                doc = models.Document.query.get(d)
+                c.documents.append(doc)
+                if n % 10000 == 0:
+                    db.session.add(c)
+                    db.session.commit()
+
+
             c.doc_count = len(new_collection_docs)
             for k,v in parent_collection.filters.items():
                 if k in c.filters:
@@ -511,7 +513,7 @@ def t_test(project):
     ttest_form.collection2.choices = [(c.id, c.name) for c in colls if not c.hidden]
     if request.method == "POST":
         rq_form = request.form.to_dict()
-        print(request.form.to_dict())
+        # print(request.form.to_dict())
         return redirect(url_for('t_test2', collection1=rq_form['collection1'], collection2=rq_form['collection2']))
     return render_template('ttest1.html', ttest_form=ttest_form)
 
@@ -524,13 +526,13 @@ def t_test2(collection1, collection2):
     coll2 = models.Collection.query.get(collection2)
     if request.method == "POST":
         rq_form = request.form.to_dict()
-        print(rq_form['data1'])
-        print(rq_form['data2'])
+        # print(rq_form['data1'])
+        # print(rq_form['data2'])
         data1 = np.array([d.data[rq_form['data1']] for d  in coll1.documents])
         data2 = np.array([d.data[rq_form['data2']] for d  in coll2.documents])
         test_result = stats.ttest_ind(data1, data2, equal_var=False)
-        print(stats.tmean(data1))
-        print(stats.tmean(data2))
+        # print(stats.tmean(data1))
+        # print(stats.tmean(data2))
         data = {}
         data['data1'] = rq_form['data1'] + " from collection " + coll1.name + "(ID " + str(coll1.id) + ")"
         data['data2'] = rq_form['data2'] + " from collection " + coll2.name + "(ID " + str(coll2.id) + ")"
@@ -621,7 +623,7 @@ def histogram2(collection):
 def linear_regression(project):
     if request.method == "POST":
         rq_form = request.form.to_dict()
-        print(request.form.to_dict())
+        # print(request.form.to_dict())
         return redirect(url_for('linear_regression2', collection=rq_form['collection']))
     p = models.Project.query.get(project)
     linear_regression_form = LinearRegressionForm()
@@ -678,11 +680,11 @@ def linear_regression2(collection):
         y_pred = regr.predict(x_test)
 
         # The coefficients
-        print("Coefficients: \n", regr.coef_)
+        # print("Coefficients: \n", regr.coef_)
         # The mean squared error
-        print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
+        # print("Mean squared error: %.2f" % mean_squared_error(y_test, y_pred))
         # The coefficient of determination: 1 is perfect prediction
-        print("Coefficient of determination: %.2f" % r2_score(y_test, y_pred))
+        # print("Coefficient of determination: %.2f" % r2_score(y_test, y_pred))
 
         fig_name = "Linear regression on " + x_heading + " and " + y_heading + " on " + coll.name
 
@@ -761,7 +763,7 @@ def view_groups():
             group_data[g.id]['name'] = g.name
             for u in g.users:
                 group_data[g.id][u.id] = u.name
-        print(group_data)
+        # print(group_data)
         return jsonify(group_data)
     return jsonify({})
 
@@ -774,9 +776,9 @@ def project(project_id):
     p = models.Project.query.get(project_id)
     group = p.group_id
     show_desc = False
-    print(group)
+    # print(group)
     if group in [1, 2,3] : ## this will show add descriptive statistics
-        print("changing show_desc")
+        # print("changing show_desc")
         show_desc = True
 
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
@@ -795,7 +797,7 @@ def project(project_id):
             db.session.add(col)
             db.session.commit()
             return redirect(url_for('project', project_id = project_id, view='1'))
-    print(show_desc)
+    # print(show_desc)
     return render_template('project.html', project=p, collections_data=collections_data, view=view, show_desc=show_desc)
 
 app.route("/add_group", methods=['GET', 'POST'])
@@ -1076,3 +1078,121 @@ def add_collection_by_filename(filename, collection_name, first_n=99999999999999
         new_coll.doc_count = new_coll.documents.count()
         db.session.add(new_coll)
         db.session.commit()
+
+
+
+def add_average_and_std(collection, fieldname):
+    numbers = []
+    for d in collection.documents:
+        numbers.append(d.data[fieldname])
+    mean = sum(numbers) / collection.documents.count()
+    standard_deviation = np.std(numbers)
+    average = np.mean(numbers)
+    existing_dict = collection.analysis_results.get('fieldname', {})
+    existing_dict.update( {'average_' + fieldname : average, 'standard deviation_' + fieldname : standard_deviation})
+    collection.analysis_results[fieldname]=existing_dict
+    flag_modified(collection, 'analysis_results')
+    db.session.add(collection)
+    db.session.merge(collection)
+    db.session.flush()
+    db.session.commit()
+
+def words_in(astr):
+    return re.split('\W', astr.lower())
+
+def any_words_in(astr, some_words):
+    words_in_string = words_in(astr)
+    # print(words_in_string, some_words)
+    # print(any (w in words_in_string for w in some_words))
+    return any(w in words_in_string for w in some_words)
+
+def all_words_in(astr, some_words):
+    words_in_string = words_in(astr)
+    # print(words_in_string, some_words)
+    # print(all (w in words_in_string for w in some_words))
+    return all(w in words_in_string for w in some_words)
+
+
+def manual_filter(parent_collection_id, operator, operand, collection_name):
+    parent_collection = models.Collection.query.get(parent_collection_id)
+    new_collection = models.Collection(parent_filters=parent_collection.filters, parent_id = parent_collection.id, project_id = parent_collection.project_id, headings=parent_collection.headings)
+    db.session.add(new_collection)
+    db.session.commit()
+    query = parent_collection.documents
+    for field_name, filterdata in c.filters.items():
+        for f in filterdata:
+            operator = f[0]
+            operand = f[1]
+            if operator == 'contains text':
+                ## we want to be able to do OR
+                if "," in operand:
+                    or_words = operand.split(",")
+                    or_words = [word.strip().lower() for word in or_words]
+                    query_filters = [models.Document.data[field_name].contains(word)  for word in or_words]
+                    query = query.filter(or_(*query_filters))
+                else:
+                    query = query.filter(models.Document.data[field_name].contains(operand))
+            if operator == 'does not contain text':
+                query = query.filter(not_(models.Document.data[field_name].contains(operand)))
+    ## because casting to int doesnt work, ,we do these by creating a list and just filtring through each of them.
+    new_collection_docs = []
+    for d in query:
+        doc_data = d.data
+        include_doc = True
+        for field_name, filterdata in c.filters.items():
+            if field_name not in doc_data:
+                include_doc = False
+            if include_doc:
+                for f in filterdata:
+                    operator = f[0]
+                    ## we only want key value pairs that relate to mathematical operations here.
+                    if operator in ['does not contain any of these individual words', 'contains any of these individual words']:
+                        operand = f[1]
+                        field_value = doc_data[field_name]
+                        if operator == 'does not contain any of these individual words' and any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
+                            include_doc = False
+                        if operator == 'contains any of these individual words' and not any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
+                            include_doc = False
+                    if operator in ['greater than', 'less than', 'equals']:
+                        operand = float(f[1])
+                        field_value = doc_data[field_name]
+                        try:
+                            field_value = float(field_value)
+                            if operator == 'greater than' and field_value < operand:
+                                include_doc = False
+                            if operator == 'less than' and field_value > operand:
+                                include_doc = False
+                            if operator == 'equals' and field_value != operand:
+                                include_doc = False
+                        except:
+                            include_doc = False
+        if include_doc:
+            # print(operand, field_value, d.id, len(new_collection_docs))
+            new_collection_docs.append(d.id)
+    # c.documents = models.Document.query(models.Document.id.in_(new_collection_docs))
+    for n, d in enumerate(new_collection_docs):
+        doc = models.Document.query.get(d)
+        c.documents.append(doc)
+        if n % 10000 == 0:
+            db.session.add(c)
+            db.session.commit()
+
+
+    c.doc_count = len(new_collection_docs)
+    for k,v in parent_collection.filters.items():
+        if k in c.filters:
+            c.filters[k].append(v)
+        else:
+            c.filters[k] = v
+    c.headings = parent_collection.headings
+    flag_modified(c, "headings")
+    # get name from form
+    c.name = post_dict['name_of_new_collection']
+    if c.name == "":
+        c.name == "Unnamed"
+    flag_modified(c, "filters")
+    db.session.add(c)
+    db.session.merge(c)
+    db.session.flush()
+    db.session.commit()
+
