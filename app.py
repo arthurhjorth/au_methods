@@ -266,9 +266,9 @@ def add_collection_from_tags(p):
         # available_tags = [tag for tag in project.tags if tag not in included_tags and tag not in excluded_tags]
         # print(inc_tags, exc_tags)
         return render_template('make_collection_from_tags.html', all_tags=project.tags, included_tags=inc_tags, excluded_tags=exc_tags, project_id=project.id)
-        
+
     return jsonify({})
-    
+
 
 
 @app.route('/try_filters2/<int:collection>', methods=["POST", "GET"])
@@ -756,7 +756,7 @@ def view_collection(collection, page_start):
 
 @app.route('/view_groups')
 def view_groups():
-    if current_user.admin: 
+    if current_user.admin:
         group_data = {}
         for g in models.Group.query:
             group_data[g.id] = {}
@@ -777,7 +777,7 @@ def project(project_id):
     group = p.group_id
     show_desc = False
     # print(group)
-    if group in [1, 2,3] : ## this will show add descriptive statistics
+    if group in [1, 2,3, 5] : ## this will show add descriptive statistics
         # print("changing show_desc")
         show_desc = True
 
