@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import json, requests, copy
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, send_from_directory
 from sqlalchemy.sql.expression import or_
 from flask_sqlalchemy import SQLAlchemy
 from forms import AddGroupForm, AddCommentForm, AddTagForm, ApplyFunctionForm, CreateFilteredCollectionForm, CreateTagForm, FilterForm, LoginForm, RegistrationForm, FilterForm2, LinearRegressionForm, LinearRegressionForm2, TTestForm, TTestForm2, HistogramForm2, AddGroupForm, AddProjectForm, AddCollectionForm
@@ -787,10 +787,10 @@ def project(project_id):
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
     if request.method == 'POST':
         if 'download-collection' in request.form.to_dict():
-            collection_id = request.form.to_dict()['hide-collection']
+            collection_id = request.form.to_dict()['download-collection']
             col = models.Collection.query.get(collection_id)
             filename = "Download_"+col.name+".csv"
-            with open(filename) as outf:
+            with open(filename, 'w') as outf:
                 for h in col.headings:
                     outf.write(h)
                     outf.write(",")
@@ -798,12 +798,12 @@ def project(project_id):
                 for d in col.documents:
                     data = d.data
                     for h in col.headings:
-                        outf.write(data[h])
+                        outf.write(str(data[h]))
                         outf.write(",")
                     outf.write("\n")
-                send_from_directory(filename)
+            return send_from_directory('.', filename, as_attachment = True)
 
-            return redirect(url_for('project', project_id = project_id))
+            # return redirect(url_for('project', project_id = project_id))
         if 'hide-collection' in request.form.to_dict():
             collection_id = request.form.to_dict()['hide-collection']
             col = models.Collection.query.get(collection_id)
