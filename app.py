@@ -786,6 +786,24 @@ def project(project_id):
 
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
     if request.method == 'POST':
+        if 'download-collection' in request.form.to_dict():
+            collection_id = request.form.to_dict()['hide-collection']
+            col = models.Collection.query.get(collection_id)
+            filename = "Download_"+col.name+".csv"
+            with open(filename) as outf:
+                for h in col.headings:
+                    outf.write(h)
+                    outf.write(",")
+                outf.write("\n")
+                for d in col.documents:
+                    data = d.data
+                    for h in col.headings:
+                        outf.write(data[h])
+                        outf.write(",")
+                    outf.write("\n")
+                send_from_directory(filename)
+
+            return redirect(url_for('project', project_id = project_id))
         if 'hide-collection' in request.form.to_dict():
             collection_id = request.form.to_dict()['hide-collection']
             col = models.Collection.query.get(collection_id)

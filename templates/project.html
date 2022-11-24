@@ -39,7 +39,7 @@
 {% for c in collections_data %}
     {% if not c.hidden or view == '1' %}
         <div class="content-section col-md-12">
-
+            <form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="download-collection">Download Collection</button></form>
         {% if not c.hidden %}
             <form action="" method="post"><button type="submit" value="{{c.collection_id}}"" name="hide-collection">Hide Collection</button></form>
         {% endif %}
