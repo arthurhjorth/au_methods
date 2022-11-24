@@ -776,10 +776,13 @@ def project(project_id):
     p = models.Project.query.get(project_id)
     group = p.group_id
     show_desc = False
+    show_analyses = False
     # print(group)
     if group in [1, 2,3, 5] : ## this will show add descriptive statistics
         # print("changing show_desc")
         show_desc = True
+    if group in [1, 2, 3]:
+        show_analyses = True
 
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
     if request.method == 'POST':
@@ -798,7 +801,7 @@ def project(project_id):
             db.session.commit()
             return redirect(url_for('project', project_id = project_id, view='1'))
     # print(show_desc)
-    return render_template('project.html', project=p, collections_data=collections_data, view=view, show_desc=show_desc)
+    return render_template('project.html', project=p, collections_data=collections_data, view=view, show_desc=show_desc, show_analyses=show_analyses)
 
 app.route("/add_group", methods=['GET', 'POST'])
 def add_group():
