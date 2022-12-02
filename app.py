@@ -1,6 +1,7 @@
 from operator import add
 import matplotlib.pyplot as plt
 import os
+import csv
 import numpy as np
 import json, requests, copy
 from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, send_from_directory
@@ -181,7 +182,7 @@ def view_document2(project_id, doc_id):
 def apply_function(collection):
     project_id = 0
     function_form = ApplyFunctionForm()
-    function_options = ["Word Count", "Sentence Count", "Reading difficulty (Lix)", "Total Sentiment", "Negative Sentiment", "Positive Sentiment"]
+    function_options = ["Word Count", "Sentence Count", "Reading difficulty (Lix)", "Total Sentiment", "Negative Sentiment", "Positive Sentiment", "Average and Standard Deviation"]
     function_form.function.choices = [(str(func), str(func)) for func in function_options]
     c = models.Collection.query.get(collection)
     project_id = c.project_id
@@ -199,6 +200,8 @@ def apply_function(collection):
             add_sentence_count(c, function_form.field_name.data)
         if function_form.function.data == "Reading difficulty (Lix)":
             add_lix_rating(c, function_form.field_name.data)
+        if function_form.function.data == "Average and Standard Deviation":
+            add_average_and_std(c, function_form.field_name.data)
         return redirect(url_for('view_collection', collection=c.id, page_start=1))
     return render_template('apply_function_to_doc.html', function_form = function_form, project_id=project_id, collection=c)
 
@@ -331,51 +334,58 @@ def try_filters2(collection):
                             query = query.filter(models.Document.data[field_name].contains(operand))
                     if operator == 'does not contain text':
                         query = query.filter(not_(models.Document.data[field_name].contains(operand)))
+                    if operator in ['greater than', 'less than', 'equals']:
+                        operand = float(f[1])
+                        print(operator, operand)
+                        if operator == 'greater than':
+                            print("Executing greater than with ", operand)
+                            query = query.filter(models.Document.data[field_name].as_float() > operand)
+                        if operator == 'less than':
+                            query = query.filter(models.Document.data[field_name].as_float() < operand)
+                        if operator == 'equals':
+                            query = query.filter(models.Document.data[field_name].as_float() == operand)
+            ## We can cast with .as_float() so only the filters on individual words now need to do the long way
+
             ## because casting to int doesnt work, ,we do these by creating a list and just filtring through each of them.
+            ## we 
             new_collection_docs = []
-            for d in query:
-                doc_data = d.data
-                include_doc = True
-                for field_name, filterdata in c.filters.items():
-                    if field_name not in doc_data:
-                        include_doc = False
+            print([(field_name, filterdata) for field_name, filterdata in c.filters.items()])
+            operators = [f[0][0] for f in c.filters.values()]
+            print(operators)
+            if any([o in ['does not contain any of these individual words', 'contains any of these individual words'] for o in operators]):
+                for d in query:
+                    doc_data = d.data
+                    include_doc = True
+                    for field_name, filterdata in c.filters.items():
+                        if field_name not in doc_data:
+                            include_doc = False
+                        if include_doc:
+                            for f in filterdata:
+                                operator = f[0]
+                                if operator in ['does not contain any of these individual words', 'contains any of these individual words']:
+                                    operand = f[1]
+                                    field_value = doc_data[field_name]
+                                    if operator == 'does not contain any of these individual words' and any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
+                                        include_doc = False
+                                    if operator == 'contains any of these individual words' and not any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
+                                        include_doc = False
                     if include_doc:
-                        for f in filterdata:
-                            operator = f[0]
-                            ## we only want key value pairs that relate to mathematical operations here.
-                            if operator in ['does not contain any of these individual words', 'contains any of these individual words']:
-                                operand = f[1]
-                                field_value = doc_data[field_name]
-                                if operator == 'does not contain any of these individual words' and any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
-                                    include_doc = False
-                                if operator == 'contains any of these individual words' and not any_words_in(field_value, [w.lower().strip() for w in operand.split(",")]):
-                                    include_doc = False
-                            if operator in ['greater than', 'less than', 'equals']:
-                                operand = float(f[1])
-                                field_value = doc_data[field_name]
-                                try:
-                                    field_value = float(field_value)
-                                    if operator == 'greater than' and field_value < operand:
-                                        include_doc = False
-                                    if operator == 'less than' and field_value > operand:
-                                        include_doc = False
-                                    if operator == 'equals' and field_value != operand:
-                                        include_doc = False
-                                except:
-                                    include_doc = False
-                if include_doc:
-                    # print(operand, field_value, d.id, len(new_collection_docs))
-                    new_collection_docs.append(d.id)
+                        # print(operand, field_value, d.id, len(new_collection_docs))
+                        new_collection_docs.append(d.id)
             # c.documents = models.Document.query(models.Document.id.in_(new_collection_docs))
-            for n, d in enumerate(new_collection_docs):
-                doc = models.Document.query.get(d)
-                c.documents.append(doc)
-                if n % 10000 == 0:
-                    db.session.add(c)
-                    db.session.commit()
+            if len(new_collection_docs) > 0:
+                print("creatinga collection the slow way")
+                for n, d in enumerate(new_collection_docs):
+                    doc = models.Document.query.get(d)
+                    c.documents.append(doc)
+                    if n % 10000 == 0:
+                        db.session.add(c)
+                        db.session.commit()
+            else:
+                print("Adding ", query.count(), " docs")
+                c.documents = query
 
-
-            c.doc_count = len(new_collection_docs)
+            c.doc_count = c.documents.count()
             for k,v in parent_collection.filters.items():
                 if k in c.filters:
                     c.filters[k].append(v)
@@ -790,17 +800,23 @@ def project(project_id):
             collection_id = request.form.to_dict()['download-collection']
             col = models.Collection.query.get(collection_id)
             filename = "Download_"+col.name+".csv"
-            with open(filename, 'w') as outf:
-                for h in col.headings:
-                    outf.write(h)
-                    outf.write(",")
-                outf.write("\n")
+            if os.path.isfile(filename):
+                os.remove(filename)
+            with open(filename, 'w', newline='') as outf:
+                writer = csv.DictWriter(outf, fieldnames = col.headings, extrasaction='ignore', delimiter=";")
+                # for h in col.headings:
+                writer.writeheader()
+                #     outf.write(h)
+                #     outf.write(",")
+                # outf.write("\n")
                 for d in col.documents:
                     data = d.data
-                    for h in col.headings:
-                        outf.write(str(data[h]))
-                        outf.write(",")
-                    outf.write("\n")
+                    writer.writerow(data)
+                    # for h in col.headings:
+                    #     val = str(data.get(h, ""))
+                    #     outf.write(val)
+                    #     outf.write(",")
+                    # outf.write("\n")
             return send_from_directory('.', filename, as_attachment = True)
 
             # return redirect(url_for('project', project_id = project_id))
@@ -1104,13 +1120,15 @@ def add_collection_by_filename(filename, collection_name, first_n=99999999999999
 
 def add_average_and_std(collection, fieldname):
     numbers = []
+    docs_with_value = 0
     for d in collection.documents:
-        numbers.append(d.data[fieldname])
-    mean = sum(numbers) / collection.documents.count()
+        if fieldname in d.data:
+            docs_with_value +=1
+            numbers.append(d.data[fieldname])
     standard_deviation = np.std(numbers)
     average = np.mean(numbers)
     existing_dict = collection.analysis_results.get('fieldname', {})
-    existing_dict.update( {'average_' + fieldname : average, 'standard deviation_' + fieldname : standard_deviation})
+    existing_dict.update( {'average_' + fieldname : average, 'standard deviation_' + fieldname : standard_deviation, 'documents with ' +fieldname+ ' in them': str(docs_with_value) + " out of " + str(collection.doc_count)})
     collection.analysis_results[fieldname]=existing_dict
     flag_modified(collection, 'analysis_results')
     db.session.add(collection)
@@ -1134,13 +1152,13 @@ def all_words_in(astr, some_words):
     return all(w in words_in_string for w in some_words)
 
 
-def manual_filter(parent_collection_id, operator, operand, collection_name):
+def manual_filter(parent_collection_id, filters, collection_name):# filers example: {'full_text' : ['does not contain', "word1,word2"]}
     parent_collection = models.Collection.query.get(parent_collection_id)
-    new_collection = models.Collection(parent_filters=parent_collection.filters, parent_id = parent_collection.id, project_id = parent_collection.project_id, headings=parent_collection.headings)
+    new_collection = models.Collection(filters=filters, parent_filters=parent_collection.filters, parent_id = parent_collection.id, project_id = parent_collection.project_id, headings=parent_collection.headings)
     db.session.add(new_collection)
     db.session.commit()
     query = parent_collection.documents
-    for field_name, filterdata in c.filters.items():
+    for field_name, filterdata in new_collection.filters.items():
         for f in filterdata:
             operator = f[0]
             operand = f[1]
@@ -1160,7 +1178,7 @@ def manual_filter(parent_collection_id, operator, operand, collection_name):
     for d in query:
         doc_data = d.data
         include_doc = True
-        for field_name, filterdata in c.filters.items():
+        for field_name, filterdata in new_collection.filters.items():
             if field_name not in doc_data:
                 include_doc = False
             if include_doc:
@@ -1193,27 +1211,26 @@ def manual_filter(parent_collection_id, operator, operand, collection_name):
     # c.documents = models.Document.query(models.Document.id.in_(new_collection_docs))
     for n, d in enumerate(new_collection_docs):
         doc = models.Document.query.get(d)
-        c.documents.append(doc)
+        new_collection.documents.append(doc)
         if n % 10000 == 0:
-            db.session.add(c)
+            print(n)
+            db.session.add(new_collection)
             db.session.commit()
 
 
-    c.doc_count = len(new_collection_docs)
+    new_collection.doc_count = len(new_collection_docs)
     for k,v in parent_collection.filters.items():
-        if k in c.filters:
-            c.filters[k].append(v)
+        if k in new_collection.filters:
+            new_collection.filters[k].append(v)
         else:
-            c.filters[k] = v
-    c.headings = parent_collection.headings
-    flag_modified(c, "headings")
+            new_collection.filters[k] = v
+    new_collection.headings = parent_collection.headings
+    flag_modified(new_collection, "headings")
     # get name from form
-    c.name = post_dict['name_of_new_collection']
-    if c.name == "":
-        c.name == "Unnamed"
-    flag_modified(c, "filters")
-    db.session.add(c)
-    db.session.merge(c)
+    new_collection.name == collection_name
+    flag_modified(new_collection, "filters")
+    db.session.add(new_collection)
+    db.session.merge(new_collection)
     db.session.flush()
     db.session.commit()
 
