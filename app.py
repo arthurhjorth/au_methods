@@ -547,7 +547,7 @@ def t_test2(collection1, collection2):
         data['data1'] = rq_form['data1'] + " from collection " + coll1.name + "(ID " + str(coll1.id) + ")"
         data['data2'] = rq_form['data2'] + " from collection " + coll2.name + "(ID " + str(coll2.id) + ")"
         data['t-statistic'] = test_result[0]
-        # data['p-value'] = test_result[1]
+        data['p-value'] = test_result[1]
         data['data1-mean'] = stats.tmean(data1)
         data['data2-mean'] = stats.tmean(data2)
         data['data1-std'] = stats.tstd(data1)
@@ -662,32 +662,38 @@ def linear_regression2(collection):
 
 
         rq_form = request.form.to_dict()
+        
+
         x_heading = rq_form['x_heading']
         y_heading = rq_form['y_heading']
         xy = [(d.data[x_heading], d.data[y_heading]) for d in coll.documents if x_heading in d.data and y_heading in d.data]
 
-        sample = int(coll.doc_count / 5)
-        x = np.array(([np.array(data_to_float(t[0])) for t in xy]))
-        x = x.reshape(-1, 1)
-        y = np.array([data_to_float(t[1]) for t in xy])
-        # Split the data into training/testing sets
-        # take half here, REMOVE the hard coding
-        x_train = x[:-sample]
-        x_test = x[-sample:]
+        # using scipy instead of sklearn. sklearn is too much
+        x = [t[0] for t in xy]
+        y = [t[1] for t in xy]
 
-        # Split the targets into training/testing sets
-        y_train = y[:-sample]
-        y_test = y[-sample:]
+        # sample = int(coll.doc_count / 5)
+        # x = np.array(([np.array(data_to_float(t[0])) for t in xy]))
+        # x = x.reshape(-1, 1)
+        # y = np.array([data_to_float(t[1]) for t in xy])
+        # # Split the data into training/testing sets
+        # # take half here, REMOVE the hard coding
+        # x_train = x[:-sample]
+        # x_test = x[-sample:]
+
+        # # Split the targets into training/testing sets
+        # y_train = y[:-sample]
+        # y_test = y[-sample:]
 
 
-        # Create linear regression object
-        regr = linear_model.LinearRegression()
+        # # Create linear regression object
+        # regr = linear_model.LinearRegression()
 
-        # Train the model using the training sets
-        regr.fit(x_train, y_train)
+        # # Train the model using the training sets
+        # regr.fit(x_train, y_train)
 
-        # Make predictions using the testing set
-        y_pred = regr.predict(x_test)
+        # # Make predictions using the testing set
+        # y_pred = regr.predict(x_test)
 
         # The coefficients
         # print("Coefficients: \n", regr.coef_)
@@ -698,19 +704,24 @@ def linear_regression2(collection):
 
         fig_name = "Linear regression on " + x_heading + " and " + y_heading + " on " + coll.name
 
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x,y) 
         fig_name = fig_name.replace(" ", "_")
         data = {}
-        data['Coefficients'] = regr.coef_[0]
-        data['MSE'] = mean_squared_error(y_test, y_pred)
-        data['Coefficients of determination (R2)'] = r2_score(y_test, y_pred)
-        data['image'] = fig_name
+        data['Slope'] = slope
+        data['Intercept'] = intercept
+        data['Standard Error'] = std_err
+        data['r_value'] = r_value
+        data['p_value'] = p_value
         data['type'] = 'LinearRegression'
         data['reflections'] = rq_form['reflections']
+        data['image'] = fig_name
 
 
         # Plot outputs
-        plt.scatter(x_test, y_test, color="black")
-        plt.plot(x_test, y_pred, color="blue", linewidth=2)
+        plt.scatter(x, y, color="black")
+        lin_x = np.linspace(min(x), max(x))
+        lin_y = slope * lin_x + intercept
+        plt.plot(lin_x, lin_y, color="blue", linewidth=2)
         # plt.ylabel(y_heading)
         # plt.xlabel(x_heading)
 
@@ -788,11 +799,11 @@ def project(project_id):
     show_desc = False
     show_analyses = False
     # print(group)
-    if group in [1, 2,3, 5] : ## this will show add descriptive statistics
+    # if group in [1, 2,3, 5] : ## this will show add descriptive statistics
         # print("changing show_desc")
-        show_desc = True
-    if group in [1, 2, 3]:
-        show_analyses = True
+    show_desc = True
+    # if group in [1, 2, 3]:
+    show_analyses = True
 
     collections_data = [{'collection_id' : c.id, 'counts' : c.doc_count, 'collection_name' : c.name, 'filters' : c.filters, 'analysis_results' : c.analysis_results, 'hidden' : c.hidden} for c in p.collections]
     if request.method == 'POST':
