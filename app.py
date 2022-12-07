@@ -764,14 +764,15 @@ def view_tag(tag_id, page_start):
 @app.route('/view_collection/<int:collection>/<int:page_start>', methods=["POST", "GET"])
 @login_required
 def view_collection(collection, page_start):
+    
     c = models.Collection.query.get(collection)
     p = models.Project.query.get(c.project_id)
-    docs = [d.data for d in c.documents.paginate(page_start, 25).items]
-    doc_ids = [d.id for d in c.documents.paginate(page_start, 25).items]
+    doc_objs = c.documents.paginate(page_start, 25).items
+    docs = [d.data for d in doc_objs]
+    doc_ids = [d.id for d in doc_objs]
     for n, doc in enumerate(docs):
         doc['id'] = doc_ids[n]
 
-    collections_data = [{'collection_id' : c.id, 'entries' : c.doc_count, 'collection_name' : c.name} for c in p.collections]
     headings = sorted(list(set([key for doc in docs for key in doc.keys()])))
     return render_template('view_collection.html', table = docs, current_page = page_start, table_name = 'documents', headings=headings, project_id=p.id, collection=c.id)
 
